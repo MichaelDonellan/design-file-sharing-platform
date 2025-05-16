@@ -7,13 +7,14 @@ export interface Design {
   file_type: 'image' | 'font' | 'template';
   user_id: string;
   downloads: number;
-  category: 'Fonts' | 'Logos' | 'Templates' | 'Icons' | 'UI Kits';
+  category: 'Fonts' | 'Logos' | 'Templates' | 'Icons' | 'UI Kits' | 'Freebies';
   subcategory?: string;
   tags?: string[];
   store_id?: string;
   average_rating?: number;
   price?: number;
   currency?: string;
+  is_freebie: boolean;
 }
 
 export interface User {
@@ -29,6 +30,17 @@ export interface Store {
   description: string | null;
   user_id: string;
   avatar_url: string | null;
+  profile_image_url: string | null;
+  store_url: string | null;
+  currency: string;
+  payout_method: 'bank' | 'paypal' | null;
+  bank_details: {
+    accountName: string;
+    accountNumber: string;
+    bankName: string;
+    routingNumber: string;
+  } | null;
+  paypal_email: string | null;
 }
 
 export interface Review {
@@ -69,5 +81,6 @@ export const CATEGORIES = {
   'Logos': ['Minimal', 'Vintage', 'Abstract', 'Mascot', 'Lettermark'],
   'Templates': ['Social Media', 'Print', 'Web', 'Mobile', 'Presentation'],
   'Icons': ['Line', 'Filled', 'Duotone', 'Outline', 'Animated'],
-  'UI Kits': ['Mobile', 'Dashboard', 'Landing Page', 'E-commerce', 'Components']
+  'UI Kits': ['Mobile', 'Dashboard', 'Landing Page', 'E-commerce', 'Components'],
+  'Freebies': ['Fonts', 'Logos', 'Templates', 'Icons', 'UI Kits']
 } as const;

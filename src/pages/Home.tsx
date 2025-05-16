@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Design, CategoryFilter } from '../types';
-import { Download, Calendar, Menu } from 'lucide-react';
+import { Download, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import CategorySidebar from '../components/CategorySidebar';
 import SearchBar from '../components/SearchBar';
@@ -95,15 +95,7 @@ export default function Home() {
 
   return (
     <div className="flex gap-8">
-      {/* Mobile category menu button */}
-      <button
-        onClick={() => setIsCategoryMenuOpen(true)}
-        className="lg:hidden fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg hover:bg-blue-600 z-40"
-      >
-        <Menu size={24} />
-      </button>
-
-      {/* Category sidebar */}
+      {/* Category sidebar - desktop only */}
       <div className="hidden lg:block">
         <CategorySidebar
           selectedCategory={selectedCategory.main}
@@ -113,21 +105,6 @@ export default function Home() {
           }}
         />
       </div>
-
-      {/* Mobile category menu */}
-      {isCategoryMenuOpen && (
-        <div className="lg:hidden">
-          <CategorySidebar
-            selectedCategory={selectedCategory.main}
-            selectedSubcategory={selectedCategory.sub}
-            onCategorySelect={(category, subcategory) => {
-              setSelectedCategory({ main: category, sub: subcategory });
-            }}
-            isMobile
-            onClose={() => setIsCategoryMenuOpen(false)}
-          />
-        </div>
-      )}
 
       <div className="flex-1">
         <div className="mb-8 space-y-4">

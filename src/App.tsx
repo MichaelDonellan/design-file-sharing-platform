@@ -12,6 +12,7 @@ import Settings from './pages/dashboard/Settings';
 import PublicStore from './pages/PublicStore';
 import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider } from './context/AuthContext';
+import PaymentSuccess from './pages/PaymentSuccess';
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
                   </PrivateRoute>
                 }
               />
+              <Route path="/payment/success" element={<PaymentSuccess />} />
             </Routes>
           </main>
         </div>

@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Design, Store, Review, DesignMockup, DesignFile } from '../types';
-import { Download, Calendar, Tag, Store as StoreIcon, Star } from 'lucide-react';
+import { Download, Calendar, Tag, Store as StoreIcon, Star, ShoppingCart } from 'lucide-react';
 import { format } from 'date-fns';
 import ImageCarousel from '../components/ImageCarousel';
 import ReviewForm from '../components/ReviewForm';
 import ReviewsList from '../components/ReviewsList';
+import { toast } from 'react-hot-toast';
 
 export default function DesignDetail() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +18,8 @@ export default function DesignDetail() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [relatedDesigns, setRelatedDesigns] = useState<Design[]>([]);
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -114,44 +117,63 @@ export default function DesignDetail() {
     fetchData();
   }, [id]);
 
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: userData } = await supabase.auth.getUser();
+      setUser(userData.user);
+    }
+
+    fetchUser();
+  }, []);
+
   const handleDownload = async () => {
-    if (!design || files.length === 0) return;
-
+    if (!design || !user) return;
+    
     try {
-      const user = supabase.auth.getUser();
-      if (!user) {
-        console.error('User must be logged in to download');
-        return;
-      }
+      setLoading(true);
+      
+      // If it's a freebie, just download
+      if (design.is_freebie) {
+        const { data: files } = await supabase
+          .from('design_files')
+          .select('*')
+          .eq('design_id', design.id)
+          .order('display_order');
 
-      // Create a purchase record with explicit user_id
-      const { error: purchaseError } = await supabase
-        .from('purchases')
-        .insert({
-          design_id: design.id,
-          user_id: (await user).data.user?.id,
-          amount: design.price || 0,
-          currency: design.currency || 'USD',
-          status: 'completed'
+        if (files && files.length > 0) {
+          // Download the first file
+          const { data: fileData } = await supabase.storage
+            .from('designs')
+            .download(files[0].file_path);
+
+          if (fileData) {
+            const url = URL.createObjectURL(fileData);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = files[0].file_path.split('/').pop() || 'design';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }
+        }
+      } else {
+        // For paid products, redirect to checkout
+        setStripeLoading(true);
+        const { data: session } = await supabase.functions.invoke('create-checkout-session', {
+          body: { designId: design.id }
         });
-
-      if (purchaseError) {
-        console.error('Error recording purchase:', purchaseError);
-        return;
+        
+        if (session?.url) {
+          window.location.href = session.url;
+        }
       }
-
-      // Increment download count
-      await supabase
-        .from('designs')
-        .update({ downloads: (design.downloads || 0) + 1 })
-        .eq('id', design.id);
-
-      // Download all files
-      files.forEach((file) => {
-        window.open(file.file_path, '_blank');
-      });
     } catch (error) {
-      console.error('Error downloading files:', error);
+      console.error('Error:', error);
+      toast.error('Failed to process your request');
+    } finally {
+      setLoading(false);
+      setStripeLoading(false);
     }
   };
 
@@ -172,7 +194,7 @@ export default function DesignDetail() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -270,13 +292,38 @@ export default function DesignDetail() {
               </div>
             </div>
             
-            <button
-              onClick={handleDownload}
-              className="flex items-center space-x-2 bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition-colors"
-            >
-              <Download size={20} />
-              <span>Download</span>
-            </button>
+            <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              {design.is_freebie && (
+                <div className="flex items-center gap-2 text-green-600">
+                  <Tag className="w-5 h-5" />
+                  <span className="font-medium">Freebie</span>
+                </div>
+              )}
+              
+              <button
+                onClick={handleDownload}
+                disabled={loading || stripeLoading}
+                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-md text-white font-medium
+                  ${design.is_freebie 
+                    ? 'bg-green-500 hover:bg-green-600' 
+                    : 'bg-blue-500 hover:bg-blue-600'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {loading || stripeLoading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : design.is_freebie ? (
+                  <>
+                    <Download className="w-5 h-5" />
+                    Download Now
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-5 h-5" />
+                    Buy Now - {design.currency} {design.price}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="prose max-w-none mb-8">
