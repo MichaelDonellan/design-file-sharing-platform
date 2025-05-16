@@ -6,12 +6,16 @@ interface CategorySidebarProps {
   selectedCategory: string;
   selectedSubcategory?: string;
   onCategorySelect: (category: string, subcategory?: string) => void;
+  isMobile?: boolean;
+  onClose?: () => void;
 }
 
 export default function CategorySidebar({
   selectedCategory,
   selectedSubcategory,
   onCategorySelect,
+  isMobile = false,
+  onClose,
 }: CategorySidebarProps) {
   const [expandedCategories, setExpandedCategories] = React.useState<string[]>([]);
 
@@ -23,16 +27,33 @@ export default function CategorySidebar({
     );
   };
 
+  const handleCategorySelect = (category: string, subcategory?: string) => {
+    onCategorySelect(category, subcategory);
+    if (isMobile && onClose) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="w-64 bg-white rounded-lg shadow-md p-4">
-      <h2 className="text-lg font-semibold mb-4">Categories</h2>
-      <div className="space-y-2">
+    <div className={`${isMobile ? 'fixed inset-0 z-50 bg-white' : 'w-64 bg-white rounded-lg shadow-md p-4'}`}>
+      {isMobile && (
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-lg font-semibold">Categories</h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-md hover:bg-gray-100"
+          >
+            <ChevronRight size={24} />
+          </button>
+        </div>
+      )}
+      <div className={`${isMobile ? 'p-4' : ''} space-y-2`}>
         {Object.entries(CATEGORIES).map(([category, subcategories]) => (
           <div key={category} className="space-y-1">
             <button
               onClick={() => {
                 toggleCategory(category);
-                onCategorySelect(category);
+                handleCategorySelect(category);
               }}
               className={`w-full flex items-center justify-between p-2 rounded-md transition-colors ${
                 selectedCategory === category
@@ -53,7 +74,7 @@ export default function CategorySidebar({
                 {subcategories.map(sub => (
                   <button
                     key={sub}
-                    onClick={() => onCategorySelect(category, sub)}
+                    onClick={() => handleCategorySelect(category, sub)}
                     className={`w-full text-left p-2 rounded-md transition-colors ${
                       selectedSubcategory === sub
                         ? 'bg-blue-50 text-blue-600'

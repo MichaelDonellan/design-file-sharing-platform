@@ -196,10 +196,10 @@ export default function DesignDetail() {
               )}
             </div>
             <div className="flex flex-col items-end gap-2">
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md flex items-center space-x-1">
-                <Tag size={16} />
-                <span>{design.category}</span>
-              </span>
+            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md flex items-center space-x-1">
+              <Tag size={16} />
+              <span>{design.category}</span>
+            </span>
               {design.tags && design.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-end">
                   {design.tags.map((tag) => (
