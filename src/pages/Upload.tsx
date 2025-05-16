@@ -80,22 +80,38 @@ export default function Upload() {
 
   const uploadFile = async (file: File, prefix: string) => {
     try {
+      if (!user) {
+        throw new Error('User must be authenticated to upload files');
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).slice(2)}.${fileExt}`;
-      const filePath = `${user!.id}/${prefix}_${fileName}`;
+      const filePath = `${user.id}/${prefix}_${fileName}`;
+
+      console.log('Attempting to upload file:', {
+        fileName,
+        filePath,
+        fileSize: file.size,
+        fileType: file.type
+      });
 
       const { error: uploadError, data } = await supabase.storage
         .from('designs')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
-        console.error('Error uploading file:', uploadError);
+        console.error('Supabase storage upload error:', uploadError);
         throw new Error(`Failed to upload ${prefix} file: ${uploadError.message}`);
       }
 
       if (!data?.path) {
         throw new Error(`No path returned for uploaded ${prefix} file`);
       }
+
+      console.log('File uploaded successfully:', data.path);
 
       const { data: { publicUrl } } = supabase.storage
         .from('designs')
@@ -105,6 +121,7 @@ export default function Upload() {
         throw new Error(`Failed to get public URL for ${prefix} file`);
       }
 
+      console.log('Generated public URL:', publicUrl);
       return publicUrl;
     } catch (error) {
       console.error(`Error in uploadFile (${prefix}):`, error);
@@ -138,11 +155,30 @@ export default function Upload() {
     setError('');
 
     try {
-      // Upload the first design file and mockup to get their paths
-      const firstDesignFile = await uploadFile(designFiles[0], 'design');
-      const firstMockupFile = await uploadFile(mockupFiles[0], 'mockup');
+      // Upload all design files first
+      const designFileUploads = await Promise.all(
+        designFiles.map(async (file, index) => {
+          const publicUrl = await uploadFile(file, 'design');
+          return {
+            file_path: publicUrl,
+            file_type: getFileType(category),
+            display_order: index
+          };
+        })
+      );
 
-      // Insert design record first
+      // Upload all mockup files
+      const mockupFileUploads = await Promise.all(
+        mockupFiles.map(async (file, index) => {
+          const publicUrl = await uploadFile(file, 'mockup');
+          return {
+            mockup_path: publicUrl,
+            display_order: index
+          };
+        })
+      );
+
+      // Insert design record
       const { data: design, error: designError } = await supabase
         .from('designs')
         .insert({
@@ -152,8 +188,6 @@ export default function Upload() {
           user_id: user.id,
           store_id: store.id,
           file_type: getFileType(category),
-          file_path: firstDesignFile,
-          mockup_path: firstMockupFile,
           price: price || 0,
           currency: 'USD',
           tags: tags.length > 0 ? tags : null,
@@ -170,52 +204,34 @@ export default function Upload() {
         throw new Error('No design data returned after creation');
       }
 
-      // Upload remaining design files
-      const designUploads = await Promise.all(
-        designFiles.slice(1).map(async (file, index) => {
-          const publicUrl = await uploadFile(file, 'design');
-          return {
+      // Insert design files
+      const { error: filesError } = await supabase
+        .from('design_files')
+        .insert(
+          designFileUploads.map(file => ({
             design_id: design.id,
-            file_path: publicUrl,
-            file_type: getFileType(category),
-            display_order: index + 1,
-          };
-        })
-      );
+            ...file
+          }))
+        );
 
-      // Upload remaining mockup files
-      const mockupUploads = await Promise.all(
-        mockupFiles.slice(1).map(async (file, index) => {
-          const publicUrl = await uploadFile(file, 'mockup');
-          return {
-            design_id: design.id,
-            mockup_path: publicUrl,
-            display_order: index + 1,
-          };
-        })
-      );
-
-      // Insert file records
-      if (designUploads.length > 0) {
-        const { error: filesError } = await supabase
-          .from('design_files')
-          .insert(designUploads);
-
-        if (filesError) {
-          console.error('Error inserting design files:', filesError);
-          throw new Error(`Failed to save design files: ${filesError.message}`);
-        }
+      if (filesError) {
+        console.error('Error inserting design files:', filesError);
+        throw new Error(`Failed to save design files: ${filesError.message}`);
       }
 
-      if (mockupUploads.length > 0) {
-        const { error: mockupsError } = await supabase
-          .from('design_mockups')
-          .insert(mockupUploads);
+      // Insert mockup files
+      const { error: mockupsError } = await supabase
+        .from('design_mockups')
+        .insert(
+          mockupFileUploads.map(file => ({
+            design_id: design.id,
+            ...file
+          }))
+        );
 
-        if (mockupsError) {
-          console.error('Error inserting mockups:', mockupsError);
-          throw new Error(`Failed to save mockups: ${mockupsError.message}`);
-        }
+      if (mockupsError) {
+        console.error('Error inserting mockups:', mockupsError);
+        throw new Error(`Failed to save mockups: ${mockupsError.message}`);
       }
 
       navigate(`/design/${design.id}`);

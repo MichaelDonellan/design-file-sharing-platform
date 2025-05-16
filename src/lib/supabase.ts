@@ -49,6 +49,8 @@ async function checkConnection() {
 checkConnection().then(connected => {
   if (!connected) {
     console.error('Failed to establish Supabase connection');
+  } else {
+    console.log('Successfully connected to Supabase');
   }
 });
 

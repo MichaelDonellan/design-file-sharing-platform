@@ -12,8 +12,6 @@ export interface Design {
   tags?: string[];
   store_id?: string;
   average_rating?: number;
-  file_path?: string;
-  mockup_path?: string;
   price?: number;
   currency?: string;
 }
