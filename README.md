@@ -8,7 +8,6 @@ A modern web application for sharing and discovering design resources. Built wit
 - Design file upload and management
 - Search and filtering capabilities
 - Tags and categories for better organization
-- Responsive design for all devices
 - Secure file storage and sharing
 
 ## Tech Stack
