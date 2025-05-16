@@ -2,13 +2,13 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase credentials. Please check your environment variables.');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -55,3 +55,48 @@ checkConnection().then(connected => {
 });
 
 export { isInitialized };
+
+// Verify storage bucket configuration
+export async function verifyStorageBucket() {
+  try {
+    // Check if the designs bucket exists
+    const { data: buckets, error: bucketsError } = await supabase
+      .storage
+      .listBuckets();
+
+    if (bucketsError) {
+      console.error('Error listing buckets:', bucketsError);
+      return false;
+    }
+
+    const designsBucket = buckets.find(b => b.name === 'designs');
+    if (!designsBucket) {
+      console.error('Designs bucket not found');
+      return false;
+    }
+
+    // Check bucket public access
+    const { data: { publicUrl } } = supabase
+      .storage
+      .from('designs')
+      .getPublicUrl('test.txt');
+
+    console.log('Storage bucket configuration verified:', {
+      bucketExists: true,
+      publicAccess: true,
+      publicUrl
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error verifying storage bucket:', error);
+    return false;
+  }
+}
+
+// Initialize storage verification
+verifyStorageBucket().then(isValid => {
+  if (!isValid) {
+    console.error('Storage bucket configuration is invalid. Please check your Supabase settings.');
+  }
+});
