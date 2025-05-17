@@ -185,6 +185,7 @@ export default function DesignDetail() {
         });
         
         if (sessionError) {
+          console.error('Session error:', sessionError);
           throw new Error('Failed to create checkout session');
         }
         

@@ -8,49 +8,36 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
 })
 
 const supabaseClient = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  Deno.env.get('SUPABASE_URL') || '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 )
 
 serve(async (req) => {
   try {
     const { designId } = await req.json()
 
+    if (!designId) {
+      return new Response(
+        JSON.stringify({ error: 'Design ID is required' }),
+        { status: 400 }
+      )
+    }
+
     // Get the design details
     const { data: design, error: designError } = await supabaseClient
       .from('designs')
-      .select('*, stores(*)')
+      .select('*')
       .eq('id', designId)
       .single()
 
     if (designError || !design) {
       return new Response(
         JSON.stringify({ error: 'Design not found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        { status: 404 }
       )
     }
 
-    // Get the user's session
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    )
-
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Create Stripe checkout session
+    // Create a Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -59,32 +46,30 @@ serve(async (req) => {
             currency: design.currency || 'usd',
             product_data: {
               name: design.name,
-              description: design.description || undefined,
-              images: design.mockup_path ? [design.mockup_path] : undefined,
+              description: design.description,
             },
-            unit_amount: Math.round((design.price || 0) * 100), // Convert to cents
+            unit_amount: design.price,
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
-      success_url: `${Deno.env.get('SITE_URL')}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${Deno.env.get('SITE_URL')}/design/${designId}`,
+      success_url: `${Deno.env.get('FRONTEND_URL')}/design/${designId}?success=true`,
+      cancel_url: `${Deno.env.get('FRONTEND_URL')}/design/${designId}?canceled=true`,
       metadata: {
         designId,
-        userId: user.id,
-        storeId: design.store_id,
       },
     })
 
     return new Response(
       JSON.stringify({ url: session.url }),
-      { headers: { 'Content-Type': 'application/json' } }
+      { status: 200 }
     )
   } catch (error) {
+    console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500 }
     )
   }
 }) 
