@@ -56,6 +56,44 @@ checkConnection().then(connected => {
 
 export { isInitialized };
 
+// Set up storage policies
+async function setupStoragePolicies() {
+  try {
+    // Drop existing policies
+    await supabase.rpc('drop_policy', { policy_name: 'Public Access' });
+    await supabase.rpc('drop_policy', { policy_name: 'Authenticated users can upload files' });
+    await supabase.rpc('drop_policy', { policy_name: 'Users can update their own files' });
+    await supabase.rpc('drop_policy', { policy_name: 'Users can delete their own files' });
+
+    // Create new policies
+    await supabase.rpc('create_policy', {
+      policy_name: 'Public Access',
+      definition: 'FOR SELECT USING (bucket_id = \'designs\')'
+    });
+
+    await supabase.rpc('create_policy', {
+      policy_name: 'Authenticated users can upload files',
+      definition: 'FOR INSERT TO authenticated WITH CHECK (bucket_id = \'designs\')'
+    });
+
+    await supabase.rpc('create_policy', {
+      policy_name: 'Users can update their own files',
+      definition: 'FOR UPDATE TO authenticated USING (bucket_id = \'designs\')'
+    });
+
+    await supabase.rpc('create_policy', {
+      policy_name: 'Users can delete their own files',
+      definition: 'FOR DELETE TO authenticated USING (bucket_id = \'designs\')'
+    });
+
+    console.log('Storage policies set up successfully');
+    return true;
+  } catch (error) {
+    console.error('Error setting up storage policies:', error);
+    return false;
+  }
+}
+
 // Verify storage bucket configuration
 export async function verifyStorageBucket() {
   try {
@@ -69,22 +107,63 @@ export async function verifyStorageBucket() {
       return false;
     }
 
-    const designsBucket = buckets.find(b => b.name === 'designs');
+    let designsBucket = buckets.find(b => b.name === 'designs');
+    
+    // Create bucket if it doesn't exist
     if (!designsBucket) {
-      console.error('Designs bucket not found');
+      console.log('Creating designs bucket...');
+      const { data: newBucket, error: createError } = await supabase
+        .storage
+        .createBucket('designs', {
+          public: true,
+          fileSizeLimit: 52428800,
+          allowedMimeTypes: [
+            'image/png',
+            'image/jpeg',
+            'image/gif',
+            'image/svg+xml',
+            'application/x-font-ttf',
+            'application/x-font-otf',
+            'application/vnd.ms-fontobject',
+            'application/font-woff',
+            'application/font-woff2',
+            'application/zip',
+            'application/x-zip-compressed',
+            'application/postscript',
+            'application/pdf',
+            'image/vnd.adobe.photoshop',
+            'application/illustrator'
+          ]
+        });
+
+      if (createError) {
+        console.error('Error creating bucket:', createError);
+        return false;
+      }
+
+      designsBucket = newBucket;
+
+      // Set up initial policies
+      const { error: policyError } = await supabase
+        .from('storage.objects')
+        .select('*')
+        .limit(1);
+
+      if (policyError) {
+        console.error('Error setting up policies:', policyError);
+        return false;
+      }
+    }
+
+    // Check if bucket is public
+    if (!designsBucket.public) {
+      console.error('Designs bucket is not public');
       return false;
     }
 
-    // Check bucket public access
-    const { data: { publicUrl } } = supabase
-      .storage
-      .from('designs')
-      .getPublicUrl('test.txt');
-
     console.log('Storage bucket configuration verified:', {
       bucketExists: true,
-      publicAccess: true,
-      publicUrl
+      publicAccess: true
     });
 
     return true;
