@@ -134,43 +134,69 @@ export default function DesignDetail() {
       
       // If it's a freebie, just download
       if (design.is_freebie) {
-        const { data: files } = await supabase
+        const { data: files, error: filesError } = await supabase
           .from('design_files')
           .select('*')
           .eq('design_id', design.id)
           .order('display_order');
 
-        if (files && files.length > 0) {
-          // Download the first file
-          const { data: fileData } = await supabase.storage
-            .from('designs')
-            .download(files[0].file_path);
-
-          if (fileData) {
-            const url = URL.createObjectURL(fileData);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = files[0].file_path.split('/').pop() || 'design';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          }
+        if (filesError) {
+          throw new Error('Failed to fetch design files');
         }
+
+        if (!files || files.length === 0) {
+          throw new Error('No files found for this design');
+        }
+
+        // Download the first file
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from('designs')
+          .download(files[0].file_path);
+
+        if (downloadError) {
+          console.error('Storage error:', downloadError);
+          throw new Error('Failed to download file. Please try again later.');
+        }
+
+        if (!fileData) {
+          throw new Error('No file data received');
+        }
+
+        const url = URL.createObjectURL(fileData);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = files[0].file_path.split('/').pop() || 'design';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Update download count
+        await supabase
+          .from('designs')
+          .update({ downloads: (design.downloads || 0) + 1 })
+          .eq('id', design.id);
+
       } else {
         // For paid products, redirect to checkout
         setStripeLoading(true);
-        const { data: session } = await supabase.functions.invoke('create-checkout-session', {
+        const { data: session, error: sessionError } = await supabase.functions.invoke('create-checkout-session', {
           body: { designId: design.id }
         });
         
+        if (sessionError) {
+          throw new Error('Failed to create checkout session');
+        }
+        
         if (session?.url) {
           window.location.href = session.url;
+        } else {
+          throw new Error('No checkout URL received');
         }
       }
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Failed to process your request');
+      toast.error(error instanceof Error ? error.message : 'Failed to process your request');
     } finally {
       setLoading(false);
       setStripeLoading(false);
