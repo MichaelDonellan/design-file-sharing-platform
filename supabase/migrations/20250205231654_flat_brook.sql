@@ -10,11 +10,7 @@
     - Set up CORS policy for web access
 */
 
--- Create the storage bucket
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('designs', 'designs', true);
-
--- Set up CORS policy
+-- Create the storage bucket with all settings
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
   'designs',
@@ -32,10 +28,15 @@ VALUES (
     'application/font-woff',
     'application/font-woff2',
     'application/zip',
-    'application/x-zip-compressed'
+    'application/x-zip-compressed',
+    'application/postscript',
+    'application/pdf',
+    'image/vnd.adobe.photoshop',
+    'application/illustrator'
   ]
 ) ON CONFLICT (id) DO UPDATE
 SET 
+  public = EXCLUDED.public,
   file_size_limit = EXCLUDED.file_size_limit,
   allowed_mime_types = EXCLUDED.allowed_mime_types;
 
