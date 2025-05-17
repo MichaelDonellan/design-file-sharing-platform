@@ -1,8 +1,11 @@
--- Drop existing bucket if it exists
+-- Drop existing policies
 DROP POLICY IF EXISTS "Public Access" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can upload files" ON storage.objects;
 DROP POLICY IF EXISTS "Users can update their own files" ON storage.objects;
 DROP POLICY IF EXISTS "Users can delete their own files" ON storage.objects;
+
+-- Drop existing bucket if it exists
+DELETE FROM storage.buckets WHERE id = 'designs';
 
 -- Create the storage bucket with all settings
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -28,11 +31,7 @@ VALUES (
     'image/vnd.adobe.photoshop',
     'application/illustrator'
   ]
-) ON CONFLICT (id) DO UPDATE
-SET 
-  public = EXCLUDED.public,
-  file_size_limit = EXCLUDED.file_size_limit,
-  allowed_mime_types = EXCLUDED.allowed_mime_types;
+);
 
 -- Set up security policies
 CREATE POLICY "Public Access"
