@@ -180,19 +180,32 @@ export default function DesignDetail() {
       } else {
         // For paid products, redirect to checkout
         setStripeLoading(true);
+        console.log('Creating checkout session for design:', design.id);
+        
         const { data: session, error: sessionError } = await supabase.functions.invoke('create-checkout-session', {
           body: { designId: design.id }
         });
         
+        console.log('Checkout session response:', { session, sessionError });
+        
         if (sessionError) {
           console.error('Session error:', sessionError);
-          throw new Error('Failed to create checkout session');
+          toast.error('Failed to create checkout session: ' + sessionError.message);
+          return;
         }
         
-        if (session?.url) {
+        if (!session) {
+          console.error('No session data received');
+          toast.error('No session data received from server');
+          return;
+        }
+        
+        if (session.url) {
+          console.log('Redirecting to:', session.url);
           window.location.href = session.url;
         } else {
-          throw new Error('No checkout URL received');
+          console.error('No URL in session:', session);
+          toast.error('No checkout URL received');
         }
       }
     } catch (error) {
