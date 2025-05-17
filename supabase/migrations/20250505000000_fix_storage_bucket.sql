@@ -4,6 +4,9 @@ DROP POLICY IF EXISTS "Authenticated users can upload files" ON storage.objects;
 DROP POLICY IF EXISTS "Users can update their own files" ON storage.objects;
 DROP POLICY IF EXISTS "Users can delete their own files" ON storage.objects;
 
+-- Delete existing objects in the bucket
+DELETE FROM storage.objects WHERE bucket_id = 'designs';
+
 -- Drop existing bucket if it exists
 DELETE FROM storage.buckets WHERE id = 'designs';
 
