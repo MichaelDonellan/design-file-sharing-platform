@@ -200,12 +200,12 @@ export default function DesignDetail() {
           return;
         }
         
-        if (session.url) {
+        if (session && typeof session.url === "string" && session.url.startsWith("http")) {
           console.log('Redirecting to:', session.url);
           window.location.href = session.url;
         } else {
-          console.error('No URL in session:', session);
-          toast.error('No checkout URL received');
+          console.error('No valid checkout URL in session:', session);
+          toast.error('No valid checkout URL received from server');
         }
       }
     } catch (error) {
