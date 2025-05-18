@@ -12,7 +12,17 @@ const supabaseClient = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 )
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*", // or your Netlify URL
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, x-application-name",
+};
+
 serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   try {
     console.log('Received request:', req);
     const { designId } = await req.json()
@@ -22,7 +32,7 @@ serve(async (req) => {
       console.error('No design ID provided');
       return new Response(
         JSON.stringify({ error: 'Design ID is required' }),
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -38,7 +48,7 @@ serve(async (req) => {
       console.error('Error fetching design:', designError);
       return new Response(
         JSON.stringify({ error: 'Design not found' }),
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       )
     }
 
@@ -46,7 +56,7 @@ serve(async (req) => {
       console.error('No design found');
       return new Response(
         JSON.stringify({ error: 'Design not found' }),
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       )
     }
 
@@ -86,10 +96,7 @@ serve(async (req) => {
       JSON.stringify({ url: session.url }),
       { 
         status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        }
+        headers: corsHeaders
       }
     )
   } catch (error) {
@@ -101,10 +108,7 @@ serve(async (req) => {
       }),
       { 
         status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        }
+        headers: corsHeaders
       }
     )
   }
