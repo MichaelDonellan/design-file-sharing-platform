@@ -6,11 +6,27 @@ import { Download, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Design, Store } from '../types';
 
+const SUPPORTED_CURRENCIES = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+];
+const EXCHANGE_RATES: Record<string, number> = {
+  USD: 1,
+  EUR: 0.92,
+  GBP: 0.79,
+  CAD: 1.36,
+  AUD: 1.52,
+};
+
 export default function PublicStore() {
   const { storeName } = useParams<{ storeName: string }>();
   const [store, setStore] = useState<Store | null>(null);
   const [designs, setDesigns] = useState<Design[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currency, setCurrency] = useState('USD');
 
   useEffect(() => {
     async function fetchStoreAndDesigns() {
@@ -44,15 +60,34 @@ export default function PublicStore() {
     fetchStoreAndDesigns();
   }, [storeName]);
 
-  const getCurrencySymbol = (currency: string) => {
-    switch (currency) {
-      case 'USD': return '$';
-      case 'EUR': return '€';
-      case 'GBP': return '£';
-      case 'CAD': return 'C$';
-      case 'AUD': return 'A$';
-      default: return currency || '$';
+  useEffect(() => {
+    const stored = localStorage.getItem('preferredCurrency');
+    if (stored && EXCHANGE_RATES[stored]) {
+      setCurrency(stored);
+      return;
     }
+    fetch('https://ipapi.co/json/')
+      .then(res => res.json())
+      .then(data => {
+        const countryToCurrency: Record<string, string> = {
+          US: 'USD', GB: 'GBP', AU: 'AUD', CA: 'CAD', EU: 'EUR', FR: 'EUR', DE: 'EUR', IT: 'EUR', ES: 'EUR', NL: 'EUR', BE: 'EUR', AT: 'EUR', IE: 'EUR', PT: 'EUR', FI: 'EUR', GR: 'EUR',
+        };
+        if (data.country && countryToCurrency[data.country] && EXCHANGE_RATES[countryToCurrency[data.country]]) {
+          setCurrency(countryToCurrency[data.country]);
+          localStorage.setItem('preferredCurrency', countryToCurrency[data.country]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const getCurrencySymbol = (currency: string) => {
+    const found = SUPPORTED_CURRENCIES.find(c => c.code === currency);
+    return found ? found.symbol : '$';
+  };
+
+  const convertPrice = (usd: number, to: string) => {
+    if (!EXCHANGE_RATES[to]) return usd;
+    return Math.round((usd * EXCHANGE_RATES[to]) * 100) / 100;
   };
 
   if (loading) {
@@ -74,7 +109,21 @@ export default function PublicStore() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-6 flex justify-end">
+        <select
+          value={currency}
+          onChange={e => {
+            setCurrency(e.target.value);
+            localStorage.setItem('preferredCurrency', e.target.value);
+          }}
+          className="border border-gray-300 rounded px-3 py-1 text-sm"
+        >
+          {SUPPORTED_CURRENCIES.map(c => (
+            <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
+          ))}
+        </select>
+      </div>
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="mb-6">
           <div className="flex items-center space-x-4">
@@ -116,7 +165,7 @@ export default function PublicStore() {
                   <div className="mt-2">
                     {design.price && design.price > 0 ? (
                       <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
-                        {getCurrencySymbol(design.currency)}{design.price.toFixed(2)}
+                        {getCurrencySymbol(currency)}{convertPrice(design.price, currency).toFixed(2)}
                       </span>
                     ) : (
                       <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>

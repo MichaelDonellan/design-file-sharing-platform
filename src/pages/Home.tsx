@@ -7,6 +7,22 @@ import { format } from 'date-fns';
 import CategorySidebar from '../components/CategorySidebar';
 import SearchBar from '../components/SearchBar';
 
+const SUPPORTED_CURRENCIES = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+];
+
+const EXCHANGE_RATES: Record<string, number> = {
+  USD: 1,
+  EUR: 0.92,
+  GBP: 0.79,
+  CAD: 1.36,
+  AUD: 1.52,
+};
+
 export default function Home() {
   const [designs, setDesigns] = useState<Design[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,16 +30,38 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>({ main: 'all' });
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+  const [currency, setCurrency] = useState('USD');
+
+  useEffect(() => {
+    // Try to get preferred currency from localStorage
+    const stored = localStorage.getItem('preferredCurrency');
+    if (stored && EXCHANGE_RATES[stored]) {
+      setCurrency(stored);
+      return;
+    }
+    // Auto-detect via ipapi.co
+    fetch('https://ipapi.co/json/')
+      .then(res => res.json())
+      .then(data => {
+        const countryToCurrency: Record<string, string> = {
+          US: 'USD', GB: 'GBP', AU: 'AUD', CA: 'CAD', EU: 'EUR', FR: 'EUR', DE: 'EUR', IT: 'EUR', ES: 'EUR', NL: 'EUR', BE: 'EUR', AT: 'EUR', IE: 'EUR', PT: 'EUR', FI: 'EUR', GR: 'EUR',
+        };
+        if (data.country && countryToCurrency[data.country] && EXCHANGE_RATES[countryToCurrency[data.country]]) {
+          setCurrency(countryToCurrency[data.country]);
+          localStorage.setItem('preferredCurrency', countryToCurrency[data.country]);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const getCurrencySymbol = (currency: string) => {
-    switch (currency) {
-      case 'USD': return '$';
-      case 'EUR': return '€';
-      case 'GBP': return '£';
-      case 'CAD': return 'C$';
-      case 'AUD': return 'A$';
-      default: return currency || '$';
-    }
+    const found = SUPPORTED_CURRENCIES.find(c => c.code === currency);
+    return found ? found.symbol : '$';
+  };
+
+  const convertPrice = (usd: number, to: string) => {
+    if (!EXCHANGE_RATES[to]) return usd;
+    return Math.round((usd * EXCHANGE_RATES[to]) * 100) / 100;
   };
 
   useEffect(() => {
@@ -105,91 +143,108 @@ export default function Home() {
   }
 
   return (
-    <div className="flex gap-8">
-      {/* Category sidebar - desktop only */}
-      <div className="hidden lg:block">
-      <CategorySidebar
-        selectedCategory={selectedCategory.main}
-        selectedSubcategory={selectedCategory.sub}
-        onCategorySelect={(category, subcategory) => {
-          setSelectedCategory({ main: category, sub: subcategory });
-        }}
-      />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Currency Selector */}
+      <div className="mb-6 flex justify-end">
+        <select
+          value={currency}
+          onChange={e => {
+            setCurrency(e.target.value);
+            localStorage.setItem('preferredCurrency', e.target.value);
+          }}
+          className="border border-gray-300 rounded px-3 py-1 text-sm"
+        >
+          {SUPPORTED_CURRENCIES.map(c => (
+            <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
+          ))}
+        </select>
       </div>
-
-      <div className="flex-1">
-        <div className="mb-8 space-y-4">
-          <h1 className="text-3xl font-bold">Browse Designs</h1>
-          <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-          />
+      <div className="flex gap-8">
+        {/* Category sidebar - desktop only */}
+        <div className="hidden lg:block">
+        <CategorySidebar
+          selectedCategory={selectedCategory.main}
+          selectedSubcategory={selectedCategory.sub}
+          onCategorySelect={(category, subcategory) => {
+            setSelectedCategory({ main: category, sub: subcategory });
+          }}
+        />
         </div>
 
-        {designs.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <p className="text-gray-600 mb-4">No designs found</p>
-            <Link
-              to="/upload"
-              className="inline-flex items-center space-x-2 bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600"
-            >
-              <span>Upload a Design</span>
-            </Link>
+        <div className="flex-1">
+          <div className="mb-8 space-y-4">
+            <h1 className="text-3xl font-bold">Browse Designs</h1>
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+            />
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {designs.map((design) => (
+
+          {designs.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow">
+              <p className="text-gray-600 mb-4">No designs found</p>
               <Link
-                key={design.id}
-                to={`/design/${design.id}`}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                to="/upload"
+                className="inline-flex items-center space-x-2 bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600"
               >
-                <div className="aspect-w-16 aspect-h-9">
-                  <img
-                    src={design.mockup_path}
-                    alt={design.name}
-                    className="w-full h-48 object-cover"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 truncate max-w-full">{design.name}</h3>
-                  {/* Price badge */}
-                  <div className="mt-2">
-                    {design.price && design.price > 0 ? (
-                      <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
-                        {getCurrencySymbol(design.currency)}{design.price.toFixed(2)}
-                      </span>
-                    ) : (
-                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
-                    )}
-                  </div>
-                  {/* Tags below main info */}
-                  {design.tags && design.tags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {design.tags.map((tag) => (
-                        <span key={tag} className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">{tag}</span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Calendar size={16} className="mr-1" />
-                      {format(new Date(design.created_at), 'MMM d, yyyy')}
-                    </div>
-                    <div className="flex items-center">
-                      <Download size={16} className="mr-1" />
-                      {design.downloads}
-                    </div>
-                  </div>
-                  {/* Buy/Download button - require login (pseudo, actual logic may be in DesignDetail) */}
-                  {/* <button className="mt-3 w-full bg-blue-600 text-white py-2 rounded-md font-semibold hover:bg-blue-700 transition-colors">
-                    {design.price && design.price > 0 ? 'Buy Now' : 'Download'}
-                  </button> */}
-                </div>
+                <span>Upload a Design</span>
               </Link>
-            ))}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {designs.map((design) => (
+                <Link
+                  key={design.id}
+                  to={`/design/${design.id}`}
+                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                >
+                  <div className="aspect-w-16 aspect-h-9">
+                    <img
+                      src={design.mockup_path}
+                      alt={design.name}
+                      className="w-full h-48 object-cover"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-900 truncate max-w-full">{design.name}</h3>
+                    {/* Price badge */}
+                    <div className="mt-2">
+                      {design.price && design.price > 0 ? (
+                        <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
+                          {getCurrencySymbol(currency)}{convertPrice(design.price, currency).toFixed(2)}
+                        </span>
+                      ) : (
+                        <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
+                      )}
+                    </div>
+                    {/* Tags below main info */}
+                    {design.tags && design.tags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {design.tags.map((tag) => (
+                          <span key={tag} className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <Calendar size={16} className="mr-1" />
+                        {format(new Date(design.created_at), 'MMM d, yyyy')}
+                      </div>
+                      <div className="flex items-center">
+                        <Download size={16} className="mr-1" />
+                        {design.downloads}
+                      </div>
+                    </div>
+                    {/* Buy/Download button - require login (pseudo, actual logic may be in DesignDetail) */}
+                    {/* <button className="mt-3 w-full bg-blue-600 text-white py-2 rounded-md font-semibold hover:bg-blue-700 transition-colors">
+                      {design.price && design.price > 0 ? 'Buy Now' : 'Download'}
+                    </button> */}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

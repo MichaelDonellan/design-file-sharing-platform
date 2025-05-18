@@ -9,6 +9,21 @@ import ReviewForm from '../components/ReviewForm';
 import ReviewsList from '../components/ReviewsList';
 import { toast } from 'react-hot-toast';
 
+const SUPPORTED_CURRENCIES = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+];
+const EXCHANGE_RATES: Record<string, number> = {
+  USD: 1,
+  EUR: 0.92,
+  GBP: 0.79,
+  CAD: 1.36,
+  AUD: 1.52,
+};
+
 export default function DesignDetail() {
   const { id } = useParams<{ id: string }>();
   const [design, setDesign] = useState<Design | null>(null);
@@ -20,6 +35,7 @@ export default function DesignDetail() {
   const [relatedDesigns, setRelatedDesigns] = useState<Design[]>([]);
   const [stripeLoading, setStripeLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [currency, setCurrency] = useState('USD');
 
   useEffect(() => {
     async function fetchData() {
@@ -124,6 +140,26 @@ export default function DesignDetail() {
     }
 
     fetchUser();
+  }, []);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('preferredCurrency');
+    if (stored && EXCHANGE_RATES[stored]) {
+      setCurrency(stored);
+      return;
+    }
+    fetch('https://ipapi.co/json/')
+      .then(res => res.json())
+      .then(data => {
+        const countryToCurrency: Record<string, string> = {
+          US: 'USD', GB: 'GBP', AU: 'AUD', CA: 'CAD', EU: 'EUR', FR: 'EUR', DE: 'EUR', IT: 'EUR', ES: 'EUR', NL: 'EUR', BE: 'EUR', AT: 'EUR', IE: 'EUR', PT: 'EUR', FI: 'EUR', GR: 'EUR',
+        };
+        if (data.country && countryToCurrency[data.country] && EXCHANGE_RATES[countryToCurrency[data.country]]) {
+          setCurrency(countryToCurrency[data.country]);
+          localStorage.setItem('preferredCurrency', countryToCurrency[data.country]);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleDownload = async () => {
@@ -241,14 +277,13 @@ export default function DesignDetail() {
   };
 
   const getCurrencySymbol = (currency: string) => {
-    switch (currency) {
-      case 'USD': return '$';
-      case 'EUR': return '€';
-      case 'GBP': return '£';
-      case 'CAD': return 'C$';
-      case 'AUD': return 'A$';
-      default: return currency || '$';
-    }
+    const found = SUPPORTED_CURRENCIES.find(c => c.code === currency);
+    return found ? found.symbol : '$';
+  };
+
+  const convertPrice = (usd: number, to: string) => {
+    if (!EXCHANGE_RATES[to]) return usd;
+    return Math.round((usd * EXCHANGE_RATES[to]) * 100) / 100;
   };
 
   if (loading) {
@@ -279,7 +314,7 @@ export default function DesignDetail() {
                 <div className="mt-2 sm:mt-0">
                   {design.price && design.price > 0 ? (
                     <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
-                      {getCurrencySymbol(design.currency)}{design.price.toFixed(2)}
+                      {getCurrencySymbol(currency)}{convertPrice(design.price, currency).toFixed(2)}
                     </span>
                   ) : (
                     <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
