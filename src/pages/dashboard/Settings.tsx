@@ -57,13 +57,6 @@ export default function Settings() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [errorModal, setErrorModal] = useState({ isOpen: false, message: '' });
-  const [customRates, setCustomRates] = useState({
-    USD: 1,
-    EUR: 1.08,
-    GBP: 1.27,
-    CAD: 0.74,
-    AUD: 0.66,
-  });
 
   useEffect(() => {
     async function fetchStore() {
@@ -101,7 +94,7 @@ export default function Settings() {
     return priceInUSD >= MIN_PRICE;
   };
 
-  const handleCurrencyChange = async (newCurrency: string) => {
+  const handleCurrencyChange = (newCurrency: string) => {
     setCurrency(newCurrency);
   };
 
@@ -114,7 +107,7 @@ export default function Settings() {
 
     try {
       if (store) {
-        // Update existing store, including currency
+        // Update existing store, including currency (but do not update products)
         const updatePayload: { name: string; description: string; avatar_url: string; updated_at: string; currency: string } = { name, description, avatar_url: avatarUrl, updated_at: new Date().toISOString(), currency };
 
         const { error } = await supabase
@@ -123,43 +116,6 @@ export default function Settings() {
           .eq('id', store.id);
 
         if (error) throw error;
-
-        // Update all designs for this store to use the new currency
-        if (currency !== store.currency) {
-          // Fetch all designs for this store
-          const { data: designs, error: fetchError } = await supabase
-            .from('designs')
-            .select('id, price, currency')
-            .eq('store_id', store.id);
-
-          if (fetchError) throw fetchError;
-
-          // Use custom rates
-          const exchangeRates = customRates;
-
-          // Convert prices to new currency
-          const updates = (designs || []).map(design => {
-            // Convert price to USD, then to new currency
-            const priceInUSD = design.price * (exchangeRates[design.currency] || 1);
-            const newPrice = Math.ceil((priceInUSD / (exchangeRates[currency] || 1)) * 100) / 100;
-            return { id: design.id, price: newPrice, currency };
-          });
-
-          // Batch update for performance if > 100 products
-          if (updates.length > 100) {
-            // Use upsert for batch update
-            const { error: batchError } = await supabase
-              .from('designs')
-              .upsert(updates, { onConflict: ['id'] });
-            if (batchError) throw batchError;
-          } else {
-            // Otherwise, update individually
-            await Promise.all(updates.map(u =>
-              supabase.from('designs').update({ price: u.price, currency: u.currency }).eq('id', u.id)
-            ));
-          }
-          toast.success('All product currencies and prices updated!');
-        }
       } else {
         // Create new store
         const { error } = await supabase
@@ -254,26 +210,6 @@ export default function Settings() {
             <p className="mt-1 text-sm text-gray-500">
               Minimum price in {currency} is {SUPPORTED_CURRENCIES.find(c => c.code === currency)?.symbol}{MIN_PRICE}
             </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Custom Exchange Rates</label>
-            <div className="grid grid-cols-2 gap-2">
-              {Object.keys(customRates).map((curr) => (
-                <div key={curr} className="flex items-center space-x-2">
-                  <span className="w-10">{curr}</span>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    min="0.0001"
-                    value={customRates[curr]}
-                    onChange={e => setCustomRates(r => ({ ...r, [curr]: parseFloat(e.target.value) }))}
-                    className="w-24 px-2 py-1 border rounded"
-                  />
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">1 USD = X {currency} (set your own rates)</p>
           </div>
 
           <div className="pt-4">
