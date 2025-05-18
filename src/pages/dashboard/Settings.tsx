@@ -138,6 +138,41 @@ export default function Settings() {
           .eq('id', store.id);
 
         if (error) throw error;
+
+        // Update all designs for this store to use the new currency
+        if (currency !== store.currency) {
+          // Fetch all designs for this store
+          const { data: designs, error: fetchError } = await supabase
+            .from('designs')
+            .select('id, price, currency')
+            .eq('store_id', store.id);
+
+          if (fetchError) throw fetchError;
+
+          // Exchange rates (same as validatePrice)
+          const exchangeRates: { [key: string]: number } = {
+            USD: 1,
+            EUR: 1.08,
+            GBP: 1.27,
+            CAD: 0.74,
+            AUD: 0.66,
+          };
+
+          // Convert prices to new currency
+          const updates = (designs || []).map(design => {
+            // Convert price to USD, then to new currency
+            const priceInUSD = design.price * (exchangeRates[design.currency] || 1);
+            const newPrice = priceInUSD / (exchangeRates[currency] || 1);
+            return supabase
+              .from('designs')
+              .update({ currency, price: Math.round(newPrice * 100) / 100 })
+              .eq('id', design.id);
+          });
+
+          // Wait for all updates
+          await Promise.all(updates);
+          toast.success('All product currencies and prices updated!');
+        }
       } else {
         // Create new store
         const { error } = await supabase
