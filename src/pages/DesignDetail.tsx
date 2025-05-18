@@ -127,7 +127,12 @@ export default function DesignDetail() {
   }, []);
 
   const handleDownload = async () => {
-    if (!design || !user) return;
+    if (!design) return;
+    if (!user) {
+      // Redirect to signup page if not logged in
+      window.location.href = '/signup';
+      return;
+    }
     
     try {
       setLoading(true);
