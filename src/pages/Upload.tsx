@@ -487,10 +487,10 @@ export default function Upload() {
           <div>
             <label className="block text-gray-700 font-medium mb-2">
               Category *
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as typeof category)}
+          </label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value as typeof category)}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >

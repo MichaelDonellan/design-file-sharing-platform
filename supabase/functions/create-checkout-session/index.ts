@@ -30,7 +30,7 @@ serve(async (req) => {
     // Get the design details
     const { data: design, error: designError } = await supabaseClient
       .from('designs')
-      .select('*')
+      .select('*, stores!inner(currency)')
       .eq('id', designId)
       .single()
 
@@ -46,17 +46,19 @@ serve(async (req) => {
     const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY');
     // Ensure price is sent as the smallest currency unit (e.g., pence for GBP, cents for USD)
     const unitAmount = Math.round(Number(design.price) * 100).toString();
+    const storeCurrency = design.stores.currency || 'gbp'; // Use store's currency, fallback to GBP
     const params = new URLSearchParams({
       "payment_method_types[]": "card",
       "mode": "payment",
       "success_url": `${frontendUrl}/design/${designId}?success=true`,
       "cancel_url": `${frontendUrl}/design/${designId}?canceled=true`,
-      "line_items[0][price_data][currency]": design.currency || "gbp",
+      "line_items[0][price_data][currency]": storeCurrency,
       "line_items[0][price_data][product_data][name]": design.name,
       "line_items[0][price_data][product_data][description]": design.description,
       "line_items[0][price_data][unit_amount]": unitAmount,
       "line_items[0][quantity]": "1",
       "metadata[designId]": designId,
+      "metadata[storeId]": design.store_id, // Add store ID to metadata for webhook
     });
 
     const sessionRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
