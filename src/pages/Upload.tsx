@@ -3,8 +3,64 @@ import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Upload as UploadIcon, X } from 'lucide-react';
+import { Upload as UploadIcon, X, AlertCircle, Info } from 'lucide-react';
 import type { Store } from '../types';
+import { CATEGORIES } from '../types';
+import { toast } from 'react-hot-toast';
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const ALLOWED_DESIGN_TYPES = {
+  'Fonts': ['.ttf', '.otf', '.woff', '.woff2'],
+  'Templates': ['.zip', '.psd', '.ai', '.pdf'],
+  'Logos': ['.svg', '.png', '.ai', '.psd'],
+  'Icons': ['.svg', '.png'],
+  'UI Kits': ['.zip', '.sketch', '.fig', '.xd'],
+};
+
+interface ValidationError {
+  field: string;
+  message: string;
+}
+
+interface ValidationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  errors: ValidationError[];
+}
+
+function ValidationModal({ isOpen, onClose, errors }: ValidationModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center text-red-600">
+            <AlertCircle className="w-6 h-6 mr-2" />
+            <h3 className="text-lg font-semibold">Validation Errors</h3>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="space-y-2">
+          {errors.map((error, index) => (
+            <div key={index} className="flex items-start text-red-600">
+              <Info className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
+              <p>{error.message}</p>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={onClose}
+          className="mt-6 w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function Upload() {
   const { user } = useAuth();
@@ -13,13 +69,15 @@ export default function Upload() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<'Fonts' | 'Logos' | 'Templates' | 'Icons' | 'UI Kits'>('Templates');
+  const [subcategory, setSubcategory] = useState<string>('');
   const [price, setPrice] = useState<number | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [designFiles, setDesignFiles] = useState<File[]>([]);
   const [mockupFiles, setMockupFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [showValidationModal, setShowValidationModal] = useState(false);
 
   useEffect(() => {
     async function checkStore() {
@@ -41,19 +99,116 @@ export default function Upload() {
     checkStore();
   }, [user, navigate]);
 
+  // Reset subcategory when category changes
+  useEffect(() => {
+    setSubcategory('');
+  }, [category]);
+
+  const validateFiles = (files: File[], type: 'design' | 'mockup'): ValidationError[] => {
+    const errors: ValidationError[] = [];
+
+    if (files.length === 0) {
+      errors.push({
+        field: type,
+        message: `Please upload at least one ${type} file`
+      });
+      return errors;
+    }
+
+    files.forEach((file, index) => {
+      // Check file size
+      if (file.size > MAX_FILE_SIZE) {
+        errors.push({
+          field: type,
+          message: `File "${file.name}" exceeds the 50MB size limit`
+        });
+      }
+
+      // Check file types for design files
+      if (type === 'design') {
+        const allowedExtensions = ALLOWED_DESIGN_TYPES[category];
+        const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
+        
+        if (!allowedExtensions.includes(fileExtension)) {
+          errors.push({
+            field: type,
+            message: `File "${file.name}" is not a valid ${category.toLowerCase()} file type. Allowed types: ${allowedExtensions.join(', ')}`
+          });
+        }
+      }
+
+      // Check mockup file types
+      if (type === 'mockup' && !file.type.startsWith('image/')) {
+        errors.push({
+          field: type,
+          message: `File "${file.name}" is not a valid image file`
+        });
+      }
+    });
+
+    return errors;
+  };
+
+  const validateForm = (): ValidationError[] => {
+    const errors: ValidationError[] = [];
+
+    // Required fields
+    if (!name.trim()) {
+      errors.push({ field: 'name', message: 'Design name is required' });
+    }
+
+    if (!description.trim()) {
+      errors.push({ field: 'description', message: 'Description is required' });
+    }
+
+    if (!subcategory) {
+      errors.push({ field: 'subcategory', message: 'Please select a subcategory' });
+    }
+
+    // Validate files
+    const designErrors = validateFiles(designFiles, 'design');
+    const mockupErrors = validateFiles(mockupFiles, 'mockup');
+    errors.push(...designErrors, ...mockupErrors);
+
+    // Validate price if set
+    if (price !== null && price < 0) {
+      errors.push({ field: 'price', message: 'Price cannot be negative' });
+    }
+
+    return errors;
+  };
+
   const { getRootProps: getDesignRootProps, getInputProps: getDesignInputProps } = useDropzone({
     onDrop: (acceptedFiles) => {
+      const errors = validateFiles(acceptedFiles, 'design');
+      if (errors.length > 0) {
+        setValidationErrors(errors);
+        setShowValidationModal(true);
+        return;
+      }
       setDesignFiles((prev) => [...prev, ...acceptedFiles]);
     },
+    accept: ALLOWED_DESIGN_TYPES[category].reduce((acc, ext) => ({
+      ...acc,
+      [ext]: []
+    }), {}),
+    maxSize: MAX_FILE_SIZE,
   });
 
   const { getRootProps: getMockupRootProps, getInputProps: getMockupInputProps } = useDropzone({
     onDrop: (acceptedFiles) => {
+      const errors = validateFiles(acceptedFiles, 'mockup');
+      if (errors.length > 0) {
+        setValidationErrors(errors);
+        setShowValidationModal(true);
+        return;
+      }
       setMockupFiles((prev) => [...prev, ...acceptedFiles]);
     },
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.gif']
     },
+    maxSize: MAX_FILE_SIZE,
   });
 
   const removeDesignFile = (index: number) => {
@@ -146,13 +301,20 @@ export default function Upload() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !store || designFiles.length === 0 || mockupFiles.length === 0) {
-      setError('Please provide all required files');
+    
+    const errors = validateForm();
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      setShowValidationModal(true);
+      return;
+    }
+
+    if (!user || !store) {
+      toast.error('Please sign in and create a store first');
       return;
     }
 
     setLoading(true);
-    setError('');
 
     try {
       // Upload all design files first
@@ -185,24 +347,19 @@ export default function Upload() {
           name,
           description,
           category,
+          subcategory,
           user_id: user.id,
           store_id: store.id,
           file_type: getFileType(category),
           price: price || 0,
-          currency: 'USD',
+          currency: store.currency || 'USD',
           tags: tags.length > 0 ? tags : null,
+          is_freebie: !price || price === 0,
         })
         .select()
         .single();
 
-      if (designError) {
-        console.error('Error creating design record:', designError);
-        throw new Error(`Failed to create design: ${designError.message}`);
-      }
-
-      if (!design) {
-        throw new Error('No design data returned after creation');
-      }
+      if (designError) throw designError;
 
       // Insert design files
       const { error: filesError } = await supabase
@@ -214,10 +371,7 @@ export default function Upload() {
           }))
         );
 
-      if (filesError) {
-        console.error('Error inserting design files:', filesError);
-        throw new Error(`Failed to save design files: ${filesError.message}`);
-      }
+      if (filesError) throw filesError;
 
       // Insert mockup files
       const { error: mockupsError } = await supabase
@@ -229,15 +383,13 @@ export default function Upload() {
           }))
         );
 
-      if (mockupsError) {
-        console.error('Error inserting mockups:', mockupsError);
-        throw new Error(`Failed to save mockups: ${mockupsError.message}`);
-      }
+      if (mockupsError) throw mockupsError;
 
+      toast.success('Design uploaded successfully!');
       navigate(`/design/${design.id}`);
     } catch (err) {
       console.error('Error in handleSubmit:', err);
-      setError(err instanceof Error ? err.message : 'Failed to upload design. Please try again.');
+      toast.error(err instanceof Error ? err.message : 'Failed to upload design');
     } finally {
       setLoading(false);
     }
@@ -249,16 +401,29 @@ export default function Upload() {
     <div className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">Upload Design</h1>
       
+      {/* Info Alert for file types and size */}
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded flex items-start space-x-3">
+        <Info className="w-6 h-6 text-blue-500 mt-1" />
+        <div className="text-blue-800 text-sm">
+          <div className="mb-1 font-semibold">Upload Requirements:</div>
+          <ul className="list-disc ml-5">
+            <li>
+              <span className="font-medium">Design files</span>: {ALLOWED_DESIGN_TYPES[category].join(', ')}
+            </li>
+            <li>
+              <span className="font-medium">Mockup images</span>: .png, .jpg, .jpeg, .gif
+            </li>
+            <li>
+              <span className="font-medium">Max file size</span>: 50MB per file
+            </li>
+          </ul>
+        </div>
+      </div>
+      
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-md">
-            {error}
-          </div>
-        )}
-
         <div className="mb-4">
           <label className="block text-gray-700 font-medium mb-2">
-            Design Name
+            Design Name *
           </label>
           <input
             type="text"
@@ -266,24 +431,62 @@ export default function Upload() {
             onChange={(e) => setName(e.target.value)}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter a descriptive name for your design"
           />
         </div>
 
         <div className="mb-4">
           <label className="block text-gray-700 font-medium mb-2">
-            Description
+            Description *
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            required
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Describe your design and its features"
           />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-gray-700 font-medium mb-2">
+              Category *
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as typeof category)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {Object.keys(CATEGORIES).map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-gray-700 font-medium mb-2">
+              Subcategory *
+            </label>
+            <select
+              value={subcategory}
+              onChange={(e) => setSubcategory(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select a subcategory</option>
+              {CATEGORIES[category].map((subcat) => (
+                <option key={subcat} value={subcat}>{subcat}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="mb-4">
           <label className="block text-gray-700 font-medium mb-2">
-            Price (USD)
+            Price ({store.currency || 'USD'})
           </label>
           <input
             type="number"
@@ -295,23 +498,6 @@ export default function Upload() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <p className="mt-1 text-sm text-gray-500">Leave empty or set to 0 for free download</p>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">
-            Category
-          </label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value as typeof category)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="Templates">Templates</option>
-            <option value="Fonts">Fonts</option>
-            <option value="Logos">Logos</option>
-            <option value="Icons">Icons</option>
-            <option value="UI Kits">UI Kits</option>
-          </select>
         </div>
 
         <div className="mb-4">
@@ -350,7 +536,7 @@ export default function Upload() {
 
         <div className="mb-4">
           <label className="block text-gray-700 font-medium mb-2">
-            Design Files
+            Design Files *
           </label>
           <div
             {...getDesignRootProps()}
@@ -359,6 +545,10 @@ export default function Upload() {
             <input {...getDesignInputProps()} />
             <p className="text-gray-600">
               Drag and drop design files here, or click to select files
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Allowed file types: {ALLOWED_DESIGN_TYPES[category].join(', ')}<br />
+              <span className="text-xs">Max file size: 50MB per file</span>
             </p>
           </div>
           {designFiles.length > 0 && (
@@ -384,7 +574,7 @@ export default function Upload() {
 
         <div className="mb-6">
           <label className="block text-gray-700 font-medium mb-2">
-            Mockup Images
+            Mockup Images *
           </label>
           <div
             {...getMockupRootProps()}
@@ -393,6 +583,10 @@ export default function Upload() {
             <input {...getMockupInputProps()} />
             <p className="text-gray-600">
               Drag and drop mockup images here, or click to select files
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Allowed file types: PNG, JPG, JPEG, GIF<br />
+              <span className="text-xs">Max file size: 50MB per file</span>
             </p>
           </div>
           {mockupFiles.length > 0 && (
@@ -418,13 +612,19 @@ export default function Upload() {
 
         <button
           type="submit"
-          disabled={loading || designFiles.length === 0 || mockupFiles.length === 0}
+          disabled={loading}
           className="w-full bg-blue-500 text-white px-6 py-3 rounded-md hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
         >
           <UploadIcon size={20} />
           <span>{loading ? 'Uploading...' : 'Upload Design'}</span>
         </button>
       </form>
+
+      <ValidationModal
+        isOpen={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        errors={validationErrors}
+      />
     </div>
   );
 }
