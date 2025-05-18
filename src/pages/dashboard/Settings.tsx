@@ -102,28 +102,6 @@ export default function Settings() {
   };
 
   const handleCurrencyChange = async (newCurrency: string) => {
-    if (!store) return;
-
-    // Check if there are any active designs with prices
-    const { data: designs } = await supabase
-      .from('designs')
-      .select('price, currency')
-      .eq('store_id', store.id)
-      .not('price', 'is', null);
-
-    if (designs && designs.length > 0) {
-      // Validate all prices with new currency
-      const invalidPrices = designs.filter(design => !validatePrice(design.price, newCurrency));
-      
-      if (invalidPrices.length > 0) {
-        setErrorModal({
-          isOpen: true,
-          message: `Some of your designs have prices that would be too low in ${newCurrency}. Please update their prices before changing currency.`
-        });
-        return;
-      }
-    }
-
     setCurrency(newCurrency);
   };
 
