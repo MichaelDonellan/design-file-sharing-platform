@@ -200,11 +200,29 @@ export default function DesignDetail() {
           return;
         }
         
-        if (session && typeof session.url === "string" && session.url.startsWith("http")) {
-          console.log('Redirecting to:', session.url);
-          window.location.href = session.url;
+        console.log("Stripe session object:", session);
+        let parsedSession = session;
+        if (typeof session === "string") {
+          try {
+            parsedSession = JSON.parse(session);
+          } catch (e) {
+            console.error("Failed to parse session string:", session);
+            toast.error("Failed to parse server response.");
+            return;
+          }
+        }
+
+        const checkoutUrl =
+          parsedSession?.url ||
+          (parsedSession?.data && parsedSession.data.url);
+
+        console.log("checkoutUrl:", checkoutUrl, "type:", typeof checkoutUrl);
+
+        if (checkoutUrl) {
+          console.log('Redirecting to:', checkoutUrl);
+          window.location.href = checkoutUrl;
         } else {
-          console.error('No valid checkout URL in session:', session);
+          console.error('No valid checkout URL in session:', parsedSession);
           toast.error('No valid checkout URL received from server');
         }
       }
