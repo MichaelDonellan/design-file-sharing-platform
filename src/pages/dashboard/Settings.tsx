@@ -130,15 +130,14 @@ export default function Settings() {
     try {
       if (store) {
         // Update existing store
+        const updatePayload: { name: string; description: string; avatar_url: string; updated_at: string; currency?: string } = { name, description, avatar_url: avatarUrl, updated_at: new Date().toISOString() };
+        if (currency !== store.currency) {
+          updatePayload.currency = currency;
+        }
+
         const { error } = await supabase
           .from('stores')
-          .update({
-            name,
-            description,
-            avatar_url: avatarUrl,
-            currency,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updatePayload)
           .eq('id', store.id);
 
         if (error) throw error;
