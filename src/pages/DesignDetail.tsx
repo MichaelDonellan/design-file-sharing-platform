@@ -240,6 +240,17 @@ export default function DesignDetail() {
     }
   };
 
+  const getCurrencySymbol = (currency: string) => {
+    switch (currency) {
+      case 'USD': return '$';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'CAD': return 'C$';
+      case 'AUD': return 'A$';
+      default: return currency || '$';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -267,7 +278,9 @@ export default function DesignDetail() {
                 {/* Price badge */}
                 <div className="mt-2 sm:mt-0">
                   {design.price && design.price > 0 ? (
-                    <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">{design.currency || 'USD'} {design.price.toFixed(2)}</span>
+                    <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
+                      {getCurrencySymbol(design.currency)}{design.price.toFixed(2)}
+                    </span>
                   ) : (
                     <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
                   )}

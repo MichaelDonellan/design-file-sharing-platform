@@ -18,6 +18,34 @@ export default function Login() {
 
     try {
       await signIn(email, password);
+      // Auto-detect currency after login
+      fetch('https://ipapi.co/json/')
+        .then(res => res.json())
+        .then(data => {
+          const countryToCurrency: Record<string, string> = {
+            US: 'USD',
+            GB: 'GBP',
+            AU: 'AUD',
+            CA: 'CAD',
+            EU: 'EUR',
+            FR: 'EUR',
+            DE: 'EUR',
+            IT: 'EUR',
+            ES: 'EUR',
+            NL: 'EUR',
+            BE: 'EUR',
+            AT: 'EUR',
+            IE: 'EUR',
+            PT: 'EUR',
+            FI: 'EUR',
+            GR: 'EUR',
+            // Add more as needed
+          };
+          if (data.country && countryToCurrency[data.country]) {
+            localStorage.setItem('preferredCurrency', countryToCurrency[data.country]);
+          }
+        })
+        .catch(() => {});
       navigate('/');
     } catch (err) {
       console.error('Error signing in:', err);

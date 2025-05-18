@@ -146,7 +146,8 @@ export default function Settings() {
         // If currency changed, update Stripe account settings
         if (currency !== store.currency) {
           const { error: stripeError } = await supabase.functions.invoke('update-stripe-currency', {
-            body: { currency }
+            body: { currency },
+            headers: { 'x-user-id': user.id }
           });
 
           if (stripeError) {
