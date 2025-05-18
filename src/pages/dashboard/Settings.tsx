@@ -130,10 +130,7 @@ export default function Settings() {
     try {
       if (store) {
         // Update existing store
-        const updatePayload: { name: string; description: string; avatar_url: string; updated_at: string; currency?: string } = { name, description, avatar_url: avatarUrl, updated_at: new Date().toISOString() };
-        if (currency !== store.currency) {
-          updatePayload.currency = currency;
-        }
+        const updatePayload: { name: string; description: string; avatar_url: string; updated_at: string } = { name, description, avatar_url: avatarUrl, updated_at: new Date().toISOString() };
 
         const { error } = await supabase
           .from('stores')
@@ -141,19 +138,6 @@ export default function Settings() {
           .eq('id', store.id);
 
         if (error) throw error;
-
-        // If currency changed, update Stripe account settings
-        if (currency !== store.currency) {
-          const { error: stripeError } = await supabase.functions.invoke('update-stripe-currency', {
-            body: { currency },
-            headers: { 'x-user-id': user.id }
-          });
-
-          if (stripeError) {
-            console.error('Error updating Stripe currency:', stripeError);
-            toast.error('Store updated but failed to update Stripe currency settings');
-          }
-        }
       } else {
         // Create new store
         const { error } = await supabase
