@@ -101,7 +101,21 @@ export default function PublicStore() {
                   className="w-full h-48 object-cover rounded-t-lg"
                 />
                 <div className="p-4">
-                  <h3 className="font-semibold text-gray-900">{design.name}</h3>
+                  <h3 className="font-semibold text-gray-900 truncate max-w-full">{design.name}</h3>
+                  <div className="mt-2">
+                    {design.price && design.price > 0 ? (
+                      <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">{design.currency || 'USD'} {design.price.toFixed(2)}</span>
+                    ) : (
+                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
+                    )}
+                  </div>
+                  {design.tags && design.tags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {design.tags.map((tag) => (
+                        <span key={tag} className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">{tag}</span>
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
                     <div className="flex items-center">
                       <Calendar size={16} className="mr-1" />

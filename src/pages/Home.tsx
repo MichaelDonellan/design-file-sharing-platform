@@ -97,13 +97,13 @@ export default function Home() {
     <div className="flex gap-8">
       {/* Category sidebar - desktop only */}
       <div className="hidden lg:block">
-        <CategorySidebar
-          selectedCategory={selectedCategory.main}
-          selectedSubcategory={selectedCategory.sub}
-          onCategorySelect={(category, subcategory) => {
-            setSelectedCategory({ main: category, sub: subcategory });
-          }}
-        />
+      <CategorySidebar
+        selectedCategory={selectedCategory.main}
+        selectedSubcategory={selectedCategory.sub}
+        onCategorySelect={(category, subcategory) => {
+          setSelectedCategory({ main: category, sub: subcategory });
+        }}
+      />
       </div>
 
       <div className="flex-1">
@@ -141,37 +141,37 @@ export default function Home() {
                   />
                 </div>
                 <div className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-xl font-semibold">{design.name}</h2>
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md">
-                      {design.category}
-                    </span>
+                  <h3 className="font-semibold text-gray-900 truncate max-w-full">{design.name}</h3>
+                  {/* Price badge */}
+                  <div className="mt-2">
+                    {design.price && design.price > 0 ? (
+                      <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">{design.currency || 'USD'} {design.price.toFixed(2)}</span>
+                    ) : (
+                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
+                    )}
                   </div>
-                  <p className="text-gray-600 line-clamp-2 mb-4">
-                    {design.description || 'No description provided'}
-                  </p>
+                  {/* Tags below main info */}
                   {design.tags && design.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
+                    <div className="mt-2 flex flex-wrap gap-2">
                       {design.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-md"
-                        >
-                          {tag}
-                        </span>
+                        <span key={tag} className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">{tag}</span>
                       ))}
                     </div>
                   )}
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <div className="flex items-center space-x-1">
-                      <Calendar size={16} />
-                      <span>{format(new Date(design.created_at), 'MMM d, yyyy')}</span>
+                  <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex items-center">
+                      <Calendar size={16} className="mr-1" />
+                      {format(new Date(design.created_at), 'MMM d, yyyy')}
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <Download size={16} />
-                      <span>{design.downloads}</span>
+                    <div className="flex items-center">
+                      <Download size={16} className="mr-1" />
+                      {design.downloads}
                     </div>
                   </div>
+                  {/* Buy/Download button - require login (pseudo, actual logic may be in DesignDetail) */}
+                  {/* <button className="mt-3 w-full bg-blue-600 text-white py-2 rounded-md font-semibold hover:bg-blue-700 transition-colors">
+                    {design.price && design.price > 0 ? 'Buy Now' : 'Download'}
+                  </button> */}
                 </div>
               </Link>
             ))}

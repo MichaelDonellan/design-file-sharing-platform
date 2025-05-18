@@ -262,21 +262,23 @@ export default function DesignDetail() {
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold">{design.name}</h1>
-              {design.average_rating && (
-                <div className="flex items-center mt-2">
-                  <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map((value) => (
-                      <Star
-                        key={value}
-                        size={16}
-                        className={value <= design.average_rating! ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}
-                      />
-                    ))}
-                  </div>
-                  <span className="ml-2 text-sm text-gray-600">
-                    ({design.average_rating.toFixed(1)})
-                  </span>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                <h1 className="text-2xl font-bold truncate max-w-full">{design.name}</h1>
+                {/* Price badge */}
+                <div className="mt-2 sm:mt-0">
+                  {design.price && design.price > 0 ? (
+                    <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">{design.currency || 'USD'} {design.price.toFixed(2)}</span>
+                  ) : (
+                    <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
+                  )}
+                </div>
+              </div>
+              {/* Tags below main info */}
+              {design.tags && design.tags.length > 0 && (
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {design.tags.map((tag) => (
+                    <span key={tag} className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">{tag}</span>
+                  ))}
                 </div>
               )}
             </div>
@@ -285,18 +287,6 @@ export default function DesignDetail() {
               <Tag size={16} />
               <span>{design.category}</span>
             </span>
-              {design.tags && design.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 justify-end">
-                  {design.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-md"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
           
@@ -354,39 +344,6 @@ export default function DesignDetail() {
                 <span>{design.downloads} downloads</span>
               </div>
             </div>
-            
-            <div className="mt-8 flex flex-col sm:flex-row gap-4">
-              {design.is_freebie && (
-                <div className="flex items-center gap-2 text-green-600">
-                  <Tag className="w-5 h-5" />
-                  <span className="font-medium">Freebie</span>
-                </div>
-              )}
-              
-              <button
-                onClick={handleDownload}
-                disabled={loading || stripeLoading}
-                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-md text-white font-medium
-                  ${design.is_freebie 
-                    ? 'bg-green-500 hover:bg-green-600' 
-                    : 'bg-blue-500 hover:bg-blue-600'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {loading || stripeLoading ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : design.is_freebie ? (
-                  <>
-                    <Download className="w-5 h-5" />
-                    Download Now
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="w-5 h-5" />
-                    Buy Now - {design.currency} {design.price}
-                  </>
-                )}
-              </button>
-            </div>
           </div>
 
           <div className="prose max-w-none mb-8">
@@ -415,6 +372,35 @@ export default function DesignDetail() {
                 </p>
               )}
             </div>
+          </div>
+
+          {/* Buy/Download button - require login */}
+          <div className="mt-6">
+            {user ? (
+              design.price && design.price > 0 ? (
+                <button
+                  onClick={handleDownload}
+                  disabled={stripeLoading}
+                  className="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {stripeLoading ? 'Processing...' : 'Buy Now'}
+                </button>
+              ) : (
+                <button
+                  onClick={handleDownload}
+                  className="w-full bg-green-600 text-white py-3 rounded-md font-semibold hover:bg-green-700 transition-colors"
+                >
+                  Download
+                </button>
+              )
+            ) : (
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition-colors"
+              >
+                {design.price && design.price > 0 ? 'Buy Now' : 'Download'}
+              </button>
+            )}
           </div>
         </div>
       </div>

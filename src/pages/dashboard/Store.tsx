@@ -75,15 +75,15 @@ export default function Store() {
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">{store.name}</h1>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold truncate max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl">{store.name}</h1>
             {store.description && (
               <p className="text-gray-600 mt-2">{store.description}</p>
             )}
           </div>
           <Link
             to="/dashboard/settings"
-            className="text-sm text-blue-600 hover:text-blue-800"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
           >
             Edit Store
           </Link>
@@ -113,7 +113,7 @@ export default function Store() {
                   className="w-full h-48 object-cover rounded-t-lg"
                 />
                 <div className="p-4">
-                  <h3 className="font-semibold text-gray-900">{design.name}</h3>
+                  <h3 className="font-semibold text-gray-900 truncate max-w-full">{design.name}</h3>
                   <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
                     <div className="flex items-center">
                       <Calendar size={16} className="mr-1" />
@@ -123,6 +123,13 @@ export default function Store() {
                       <Download size={16} className="mr-1" />
                       {design.downloads}
                     </div>
+                  </div>
+                  <div className="mt-2">
+                    {design.price && design.price > 0 ? (
+                      <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">{store.currency || 'USD'} {design.price.toFixed(2)}</span>
+                    ) : (
+                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
+                    )}
                   </div>
                 </div>
               </Link>
