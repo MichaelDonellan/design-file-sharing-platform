@@ -57,6 +57,13 @@ export default function Settings() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [errorModal, setErrorModal] = useState({ isOpen: false, message: '' });
+  const [customRates, setCustomRates] = useState({
+    USD: 1,
+    EUR: 1.08,
+    GBP: 1.27,
+    CAD: 0.74,
+    AUD: 0.66,
+  });
 
   useEffect(() => {
     async function fetchStore() {
@@ -149,28 +156,30 @@ export default function Settings() {
 
           if (fetchError) throw fetchError;
 
-          // Exchange rates (same as validatePrice)
-          const exchangeRates: { [key: string]: number } = {
-            USD: 1,
-            EUR: 1.08,
-            GBP: 1.27,
-            CAD: 0.74,
-            AUD: 0.66,
-          };
+          // Use custom rates
+          const exchangeRates = customRates;
 
           // Convert prices to new currency
           const updates = (designs || []).map(design => {
             // Convert price to USD, then to new currency
             const priceInUSD = design.price * (exchangeRates[design.currency] || 1);
-            const newPrice = priceInUSD / (exchangeRates[currency] || 1);
-            return supabase
-              .from('designs')
-              .update({ currency, price: Math.round(newPrice * 100) / 100 })
-              .eq('id', design.id);
+            const newPrice = Math.ceil((priceInUSD / (exchangeRates[currency] || 1)) * 100) / 100;
+            return { id: design.id, price: newPrice, currency };
           });
 
-          // Wait for all updates
-          await Promise.all(updates);
+          // Batch update for performance if > 100 products
+          if (updates.length > 100) {
+            // Use upsert for batch update
+            const { error: batchError } = await supabase
+              .from('designs')
+              .upsert(updates, { onConflict: ['id'] });
+            if (batchError) throw batchError;
+          } else {
+            // Otherwise, update individually
+            await Promise.all(updates.map(u =>
+              supabase.from('designs').update({ price: u.price, currency: u.currency }).eq('id', u.id)
+            ));
+          }
           toast.success('All product currencies and prices updated!');
         }
       } else {
@@ -267,6 +276,26 @@ export default function Settings() {
             <p className="mt-1 text-sm text-gray-500">
               Minimum price in {currency} is {SUPPORTED_CURRENCIES.find(c => c.code === currency)?.symbol}{MIN_PRICE}
             </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Custom Exchange Rates</label>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.keys(customRates).map((curr) => (
+                <div key={curr} className="flex items-center space-x-2">
+                  <span className="w-10">{curr}</span>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min="0.0001"
+                    value={customRates[curr]}
+                    onChange={e => setCustomRates(r => ({ ...r, [curr]: parseFloat(e.target.value) }))}
+                    className="w-24 px-2 py-1 border rounded"
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">1 USD = X {currency} (set your own rates)</p>
           </div>
 
           <div className="pt-4">
