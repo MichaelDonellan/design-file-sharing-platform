@@ -2,6 +2,50 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import type { Store } from '../../types';
+import { AlertCircle, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+
+const MIN_PRICE = 0.50; // Minimum price in any currency
+const SUPPORTED_CURRENCIES = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+];
+
+interface ErrorModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  message: string;
+}
+
+function ErrorModal({ isOpen, onClose, message }: ErrorModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center text-red-600">
+            <AlertCircle className="w-6 h-6 mr-2" />
+            <h3 className="text-lg font-semibold">Error</h3>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-gray-700 mb-4">{message}</p>
+        <button
+          onClick={onClose}
+          className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function Settings() {
   const { user } = useAuth();
@@ -9,8 +53,10 @@ export default function Settings() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [currency, setCurrency] = useState('USD');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [errorModal, setErrorModal] = useState({ isOpen: false, message: '' });
 
   useEffect(() => {
     async function fetchStore() {
@@ -27,11 +73,52 @@ export default function Settings() {
         setName(data.name);
         setDescription(data.description || '');
         setAvatarUrl(data.avatar_url || '');
+        setCurrency(data.currency || 'USD');
       }
     }
 
     fetchStore();
   }, [user]);
+
+  const validatePrice = (price: number, currencyCode: string): boolean => {
+    // Convert price to USD for minimum validation
+    const exchangeRates: { [key: string]: number } = {
+      USD: 1,
+      EUR: 1.08,
+      GBP: 1.27,
+      CAD: 0.74,
+      AUD: 0.66,
+    };
+
+    const priceInUSD = price * (exchangeRates[currencyCode] || 1);
+    return priceInUSD >= MIN_PRICE;
+  };
+
+  const handleCurrencyChange = async (newCurrency: string) => {
+    if (!store) return;
+
+    // Check if there are any active designs with prices
+    const { data: designs } = await supabase
+      .from('designs')
+      .select('price, currency')
+      .eq('store_id', store.id)
+      .not('price', 'is', null);
+
+    if (designs && designs.length > 0) {
+      // Validate all prices with new currency
+      const invalidPrices = designs.filter(design => !validatePrice(design.price, newCurrency));
+      
+      if (invalidPrices.length > 0) {
+        setErrorModal({
+          isOpen: true,
+          message: `Some of your designs have prices that would be too low in ${newCurrency}. Please update their prices before changing currency.`
+        });
+        return;
+      }
+    }
+
+    setCurrency(newCurrency);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,11 +136,24 @@ export default function Settings() {
             name,
             description,
             avatar_url: avatarUrl,
+            currency,
             updated_at: new Date().toISOString(),
           })
           .eq('id', store.id);
 
         if (error) throw error;
+
+        // If currency changed, update Stripe account settings
+        if (currency !== store.currency) {
+          const { error: stripeError } = await supabase.functions.invoke('update-stripe-currency', {
+            body: { currency }
+          });
+
+          if (stripeError) {
+            console.error('Error updating Stripe currency:', stripeError);
+            toast.error('Store updated but failed to update Stripe currency settings');
+          }
+        }
       } else {
         // Create new store
         const { error } = await supabase
@@ -62,6 +162,7 @@ export default function Settings() {
             name,
             description,
             avatar_url: avatarUrl,
+            currency,
             user_id: user.id,
           });
 
@@ -69,9 +170,11 @@ export default function Settings() {
       }
 
       setMessage('Store settings saved successfully!');
+      toast.success('Store settings updated');
     } catch (error) {
       console.error('Error saving store settings:', error);
       setMessage('Failed to save store settings. Please try again.');
+      toast.error('Failed to save store settings');
     } finally {
       setLoading(false);
     }
@@ -127,15 +230,43 @@ export default function Settings() {
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            {loading ? 'Saving...' : 'Save Settings'}
-          </button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Default Currency
+            </label>
+            <select
+              value={currency}
+              onChange={(e) => handleCurrencyChange(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            >
+              {SUPPORTED_CURRENCIES.map((curr) => (
+                <option key={curr.code} value={curr.code}>
+                  {curr.code} ({curr.symbol}) - {curr.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-sm text-gray-500">
+              Minimum price in {currency} is {SUPPORTED_CURRENCIES.find(c => c.code === currency)?.symbol}{MIN_PRICE}
+            </p>
+          </div>
+
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Saving...' : 'Save Settings'}
+            </button>
+          </div>
         </form>
       </div>
+
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        onClose={() => setErrorModal({ isOpen: false, message: '' })}
+        message={errorModal.message}
+      />
     </div>
   );
 }

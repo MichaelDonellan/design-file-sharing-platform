@@ -353,27 +353,6 @@ export default function DesignDetail() {
             </p>
           </div>
 
-          <div className="border-t pt-8">
-            <h2 className="text-xl font-semibold mb-6">Reviews</h2>
-            <div className="space-y-8">
-              <ReviewForm
-                designId={design.id}
-                onReviewSubmitted={() => {
-                  // Refresh reviews after submission
-                  window.location.reload();
-                }}
-              />
-              
-              {reviews.length > 0 ? (
-                <ReviewsList reviews={reviews} />
-              ) : (
-                <p className="text-gray-600 text-center py-4">
-                  No reviews yet. Be the first to review this design!
-                </p>
-              )}
-            </div>
-          </div>
-
           {/* Buy/Download button - require login */}
           <div className="mt-6">
             {user ? (
@@ -401,6 +380,26 @@ export default function DesignDetail() {
                 {design.price && design.price > 0 ? 'Buy Now' : 'Download'}
               </button>
             )}
+          </div>
+
+          <div className="border-t pt-8">
+            <h2 className="text-xl font-semibold mb-6">Reviews</h2>
+            <div className="space-y-8">
+              <ReviewForm
+                designId={design.id}
+                onReviewSubmitted={() => {
+                  // Refresh reviews after submission
+                  window.location.reload();
+                }}
+              />
+              {reviews.length > 0 ? (
+                <ReviewsList reviews={reviews} />
+              ) : (
+                <p className="text-gray-600 text-center py-4">
+                  No reviews yet. Be the first to review this design!
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>

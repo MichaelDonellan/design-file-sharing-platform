@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -28,6 +28,37 @@ export default function StoreSignup() {
     routingNumber: '',
   });
   const [paypalEmail, setPaypalEmail] = useState('');
+
+  const countryToCurrency: Record<string, string> = {
+    US: 'USD',
+    GB: 'GBP',
+    AU: 'AUD',
+    CA: 'CAD',
+    EU: 'EUR',
+    FR: 'EUR',
+    DE: 'EUR',
+    IT: 'EUR',
+    ES: 'EUR',
+    NL: 'EUR',
+    BE: 'EUR',
+    AT: 'EUR',
+    IE: 'EUR',
+    PT: 'EUR',
+    FI: 'EUR',
+    GR: 'EUR',
+    // Add more as needed
+  };
+
+  useEffect(() => {
+    fetch('https://ipapi.co/json/')
+      .then(res => res.json())
+      .then(data => {
+        if (data.country && countryToCurrency[data.country]) {
+          setCurrency(countryToCurrency[data.country]);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

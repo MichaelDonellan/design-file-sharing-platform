@@ -13,6 +13,7 @@ import PublicStore from './pages/PublicStore';
 import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider } from './context/AuthContext';
 import PaymentSuccess from './pages/PaymentSuccess';
+import PlusLibrary from './pages/PlusLibrary';
 
 function App() {
   return (
@@ -60,6 +61,7 @@ function App() {
                 }
               />
               <Route path="/payment/success" element={<PaymentSuccess />} />
+              <Route path="/plus-library" element={<PlusLibrary />} />
             </Routes>
           </main>
         </div>

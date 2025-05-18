@@ -30,8 +30,8 @@ export default function Navbar() {
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
             <Link to="/" className="text-xl font-bold text-gray-800 ml-2">
-              DesignShare
-            </Link>
+            DesignShare
+          </Link>
           </div>
           
           <div className="hidden lg:flex items-center space-x-4">

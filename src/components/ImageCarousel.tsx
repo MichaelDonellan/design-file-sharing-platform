@@ -56,27 +56,27 @@ export default function ImageCarousel({ mockups }: ImageCarouselProps) {
         {mockups.map((mockup, index) => {
           console.log(`Rendering mockup ${index + 1}:`, mockup);
           return (
-            <SwiperSlide key={mockup.id} className="bg-gray-100">
+          <SwiperSlide key={mockup.id} className="bg-gray-100">
               <div className="swiper-zoom-container relative">
                 {!loadedImages[mockup.id] && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
                   </div>
                 )}
-                <img
+              <img
                   src={mockup.mockup_path}
-                  alt={`Design mockup ${index + 1}`}
+                alt={`Design mockup ${index + 1}`}
                   className={`w-full h-[500px] object-contain cursor-zoom-in transition-opacity duration-300 ${
                     loadedImages[mockup.id] ? 'opacity-100' : 'opacity-0'
                   }`}
                   onLoad={() => handleImageLoad(mockup.id)}
                   onError={(e) => handleImageError(mockup.id, e)}
                 />
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-center py-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                {index + 1} of {mockups.length}
-              </div>
-            </SwiperSlide>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-center py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              {index + 1} of {mockups.length}
+            </div>
+          </SwiperSlide>
           );
         })}
       </Swiper>
