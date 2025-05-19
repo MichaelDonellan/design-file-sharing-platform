@@ -30,11 +30,18 @@ export default function Navbar() {
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
             <Link to="/" className="text-xl font-bold text-gray-800 ml-2">
-            DesignShare
-          </Link>
+              DesignShare
+            </Link>
           </div>
           
           <div className="hidden lg:flex items-center space-x-4">
+            <Link
+              to="/categories"
+              className="flex items-center space-x-1 text-gray-600 hover:text-gray-900"
+            >
+              <Tag size={20} />
+              <span>Categories</span>
+            </Link>
             {user ? (
               <>
                 <Link
@@ -70,6 +77,14 @@ export default function Navbar() {
         {/* Mobile menu */}
         <div className={`lg:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
           <div className="px-2 pt-2 pb-3 space-y-1">
+            <Link
+              to="/categories"
+              className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <Tag size={20} />
+              <span>Categories</span>
+            </Link>
             {user ? (
               <>
                 <Link
