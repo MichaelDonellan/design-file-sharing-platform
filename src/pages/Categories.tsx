@@ -182,16 +182,26 @@ export default function Categories() {
     setShowSuggestions(true);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setActiveSearchQuery(searchQuery);
-    setShowSuggestions(false);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      setActiveSearchQuery(searchQuery);
+      setShowSuggestions(false);
+      // Blur the input to dismiss keyboard on mobile
+      e.currentTarget.blur();
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      e.currentTarget.blur();
+    }
   };
 
   const handleSuggestionClick = (suggestion: SearchSuggestion) => {
     setSearchQuery(suggestion.name);
     setActiveSearchQuery(suggestion.name);
     setShowSuggestions(false);
+    // Blur the input to dismiss keyboard on mobile
+    const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+    if (input) input.blur();
   };
 
   const filterDesigns = (designs: Design[]) => {
@@ -230,19 +240,40 @@ export default function Categories() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-4">Browse Categories</h1>
         <div ref={searchRef} className="relative">
-          <form onSubmit={handleSearch} className="relative">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            setActiveSearchQuery(searchQuery);
+            setShowSuggestions(false);
+            // Blur the input to dismiss keyboard on mobile
+            const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+            if (input) input.blur();
+          }} className="relative">
             <div className="flex">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={handleSearchChange}
+                onKeyDown={handleKeyDown}
                 onFocus={() => setShowSuggestions(true)}
                 placeholder="Search designs or categories..."
                 className="w-full px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                // Add inputmode to show appropriate keyboard on mobile
+                inputMode="search"
+                // Prevent auto-capitalization on mobile
+                autoCapitalize="off"
+                // Prevent auto-correct on mobile
+                autoCorrect="off"
+                // Prevent auto-complete suggestions
+                autoComplete="off"
               />
               <button
                 type="submit"
                 className="bg-blue-500 text-white px-4 py-2 rounded-r-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center"
+                onClick={() => {
+                  // Blur the input to dismiss keyboard on mobile
+                  const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+                  if (input) input.blur();
+                }}
               >
                 <Search size={20} />
               </button>
@@ -251,12 +282,18 @@ export default function Categories() {
 
           {/* Suggestions dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
+            <div 
+              className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto"
+              // Add touch-action to prevent scrolling issues on mobile
+              style={{ touchAction: 'manipulation' }}
+            >
               {suggestions.map((suggestion) => (
                 <button
                   key={`${suggestion.type}-${suggestion.id}`}
                   onClick={() => handleSuggestionClick(suggestion)}
                   className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 flex items-center justify-between"
+                  // Add touch-action to prevent scrolling issues on mobile
+                  style={{ touchAction: 'manipulation' }}
                 >
                   <div className="flex items-center">
                     <Tag size={16} className="mr-2 text-gray-500" />
