@@ -17,28 +17,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email!,
-        });
-      }
-      setLoading(false);
-    });
+    let isMounted = true;
+    let authSubscription: { unsubscribe: () => void } | null = null;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email!,
-        });
-      } else {
-        setUser(null);
-      }
-    });
+    async function initializeAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
 
-    return () => subscription.unsubscribe();
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email!,
+          });
+        }
+        setLoading(false);
+
+        // Set up auth state change subscription
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (!isMounted) return;
+
+          if (session?.user) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email!,
+            });
+          } else {
+            setUser(null);
+          }
+        });
+
+        authSubscription = subscription;
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    initializeAuth();
+
+    return () => {
+      isMounted = false;
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

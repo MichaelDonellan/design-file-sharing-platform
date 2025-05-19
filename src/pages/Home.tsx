@@ -67,11 +67,15 @@ export default function Home() {
 
   useEffect(() => {
     let isMounted = true;
+    let abortController = new AbortController();
 
     async function fetchDesigns() {
       try {
         setLoading(true);
         setError(null);
+
+        // Check if component is still mounted before proceeding
+        if (!isMounted) return;
 
         let query = supabase
           .from('designs')
@@ -91,11 +95,14 @@ export default function Home() {
 
         const { data: designsData, error: supabaseError } = await query;
 
+        // Check if component is still mounted before proceeding
+        if (!isMounted) return;
+
         if (supabaseError) {
           throw supabaseError;
         }
 
-        if (isMounted && designsData) {
+        if (designsData) {
           setDesigns(designsData);
           setError(null);
 
@@ -105,6 +112,9 @@ export default function Home() {
             .select('design_id, mockup_path')
             .in('design_id', designsData.map(d => d.id))
             .order('display_order');
+
+          // Check if component is still mounted before proceeding
+          if (!isMounted) return;
 
           if (mockupsError) {
             console.error('Error fetching mockups:', mockupsError);
@@ -137,6 +147,7 @@ export default function Home() {
 
     return () => {
       isMounted = false;
+      abortController.abort();
     };
   }, [selectedCategory, searchQuery]);
 
