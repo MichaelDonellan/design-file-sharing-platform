@@ -17,7 +17,7 @@ export default function Categories() {
   const [designs, setDesigns] = useState<Record<string, Design[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeSearchQuery, setActiveSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [designMockups, setDesignMockups] = useState<Record<string, string>>({});
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -36,7 +36,6 @@ export default function Categories() {
 
         if (!isMounted) return;
 
-        // Fetch all designs
         const { data: designsData, error: supabaseError } = await supabase
           .from('designs')
           .select('*')
@@ -49,9 +48,7 @@ export default function Categories() {
         }
 
         if (designsData) {
-          // Group designs by category
           const designsByCategory = designsData.reduce((acc, design) => {
-            // If the design is free, add it to Freebies category
             const category = design.is_freebie ? 'Freebies' : design.category;
             if (!acc[category]) {
               acc[category] = [];
@@ -60,7 +57,6 @@ export default function Categories() {
             return acc;
           }, {} as Record<string, Design[]>);
 
-          // Ensure all categories exist in the object
           Object.keys(CATEGORIES).forEach(category => {
             if (!designsByCategory[category]) {
               designsByCategory[category] = [];
@@ -69,7 +65,6 @@ export default function Categories() {
 
           setDesigns(designsByCategory);
 
-          // Fetch mockups for all designs
           const { data: mockupsData, error: mockupsError } = await supabase
             .from('design_mockups')
             .select('design_id, mockup_path')
@@ -178,7 +173,7 @@ export default function Categories() {
   const handleSearch = () => {
     if (inputRef.current) {
       const query = inputRef.current.value;
-      setActiveSearchQuery(query);
+      setSearchQuery(query);
       setShowSuggestions(false);
     }
   };
@@ -211,7 +206,7 @@ export default function Categories() {
   const handleSuggestionClick = (suggestion: SearchSuggestion) => {
     if (inputRef.current) {
       inputRef.current.value = suggestion.name;
-      setActiveSearchQuery(suggestion.name);
+      setSearchQuery(suggestion.name);
       setShowSuggestions(false);
     }
   };
@@ -226,11 +221,12 @@ export default function Categories() {
   }, []);
 
   const filterDesigns = (designs: Design[]) => {
-    if (!activeSearchQuery) return designs;
+    if (!searchQuery) return designs;
+    const query = searchQuery.toLowerCase();
     return designs.filter(design => 
-      design.name.toLowerCase().includes(activeSearchQuery.toLowerCase()) ||
-      design.description?.toLowerCase().includes(activeSearchQuery.toLowerCase()) ||
-      design.tags?.some(tag => tag.toLowerCase().includes(activeSearchQuery.toLowerCase()))
+      design.name.toLowerCase().includes(query) ||
+      design.description?.toLowerCase().includes(query) ||
+      design.tags?.some(tag => tag.toLowerCase().includes(query))
     );
   };
 
@@ -265,7 +261,8 @@ export default function Categories() {
             <input
               ref={inputRef}
               type="text"
-              defaultValue=""
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               onInput={handleInput}
               onKeyDown={handleKeyDown}
               onFocus={() => setShowSuggestions(true)}
