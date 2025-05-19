@@ -23,6 +23,7 @@ export default function Categories() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     let isMounted = true;
@@ -182,11 +183,19 @@ export default function Categories() {
     }
   };
 
-  const handleInputChange = () => {
+  const handleInput = () => {
     if (inputRef.current) {
-      const query = inputRef.current.value;
-      updateSuggestions(query);
-      setShowSuggestions(true);
+      // Clear any existing timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      // Set a new timeout to update suggestions after typing stops
+      searchTimeoutRef.current = setTimeout(() => {
+        const query = inputRef.current?.value || '';
+        updateSuggestions(query);
+        setShowSuggestions(true);
+      }, 100); // Small delay to prevent too many updates
     }
   };
 
@@ -206,6 +215,15 @@ export default function Categories() {
       setShowSuggestions(false);
     }
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const filterDesigns = (designs: Design[]) => {
     if (!activeSearchQuery) return designs;
@@ -248,7 +266,7 @@ export default function Categories() {
               ref={inputRef}
               type="text"
               defaultValue=""
-              onChange={handleInputChange}
+              onInput={handleInput}
               onKeyDown={handleKeyDown}
               onFocus={() => setShowSuggestions(true)}
               placeholder="Search designs or categories..."
@@ -257,6 +275,7 @@ export default function Categories() {
               autoCorrect="off"
               autoComplete="off"
               spellCheck="false"
+              enterKeyHint="search"
             />
             <button
               type="button"
