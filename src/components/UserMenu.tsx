@@ -1,11 +1,30 @@
-import { Fragment } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { Link } from 'react-router-dom';
-import { User, Store, Settings, LogOut } from 'lucide-react';
+import { User, Store, Settings, LogOut, BarChart3, LineChart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import type { Store as StoreType } from '../types';
 
 export default function UserMenu() {
   const { user, signOut } = useAuth();
+  const [store, setStore] = useState<StoreType | null>(null);
+
+  useEffect(() => {
+    async function fetchStore() {
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      setStore(data);
+    }
+
+    fetchStore();
+  }, [user]);
 
   if (!user) return null;
 
@@ -26,17 +45,17 @@ export default function UserMenu() {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-          <div className="py-1">
+        <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+          <div className="px-1 py-1">
             <Menu.Item>
               {({ active }) => (
                 <Link
                   to="/dashboard/profile"
                   className={`${
                     active ? 'bg-gray-100' : ''
-                  } flex items-center px-4 py-2 text-sm text-gray-700`}
+                  } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
                 >
-                  <User size={16} className="mr-2" />
+                  <User className="mr-2 h-5 w-5" />
                   Profile
                 </Link>
               )}
@@ -47,36 +66,68 @@ export default function UserMenu() {
                   to="/dashboard/store"
                   className={`${
                     active ? 'bg-gray-100' : ''
-                  } flex items-center px-4 py-2 text-sm text-gray-700`}
+                  } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
                 >
-                  <Store size={16} className="mr-2" />
-                  Store
+                  <Store className="mr-2 h-5 w-5" />
+                  {store ? 'My Store' : 'Create Store'}
                 </Link>
               )}
             </Menu.Item>
+            {store && (
+              <>
+                <Menu.Item>
+                  {({ active }) => (
+                    <Link
+                      to="/dashboard/seller"
+                      className={`${
+                        active ? 'bg-gray-100' : ''
+                      } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
+                    >
+                      <BarChart3 className="mr-2 h-5 w-5" />
+                      Seller Dashboard
+                    </Link>
+                  )}
+                </Menu.Item>
+                <Menu.Item>
+                  {({ active }) => (
+                    <Link
+                      to="/dashboard/insights"
+                      className={`${
+                        active ? 'bg-gray-100' : ''
+                      } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
+                    >
+                      <LineChart className="mr-2 h-5 w-5" />
+                      Insights
+                    </Link>
+                  )}
+                </Menu.Item>
+              </>
+            )}
             <Menu.Item>
               {({ active }) => (
                 <Link
                   to="/dashboard/settings"
                   className={`${
                     active ? 'bg-gray-100' : ''
-                  } flex items-center px-4 py-2 text-sm text-gray-700`}
+                  } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
                 >
-                  <Settings size={16} className="mr-2" />
+                  <Settings className="mr-2 h-5 w-5" />
                   Settings
                 </Link>
               )}
             </Menu.Item>
+          </div>
+          <div className="px-1 py-1">
             <Menu.Item>
               {({ active }) => (
                 <button
-                  onClick={signOut}
+                  onClick={() => signOut()}
                   className={`${
                     active ? 'bg-gray-100' : ''
-                  } flex items-center w-full px-4 py-2 text-sm text-gray-700`}
+                  } group flex w-full items-center rounded-md px-2 py-2 text-sm text-red-600`}
                 >
-                  <LogOut size={16} className="mr-2" />
-                  Logout
+                  <LogOut className="mr-2 h-5 w-5" />
+                  Sign Out
                 </button>
               )}
             </Menu.Item>
