@@ -34,6 +34,17 @@ export default function Navbar() {
             </Link>
           </div>
           
+          {/* Profile icon for mobile */}
+          {user && (
+            <div className="lg:hidden">
+              <Link to="/dashboard/profile" className="p-2 rounded-full hover:bg-gray-100">
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                  {user.email.charAt(0).toUpperCase()}
+                </div>
+              </Link>
+            </div>
+          )}
+          
           <div className="hidden lg:flex items-center space-x-4">
             <Link
               to="/categories"
@@ -77,16 +88,17 @@ export default function Navbar() {
         {/* Mobile menu */}
         <div className={`lg:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
           <div className="px-2 pt-2 pb-3 space-y-1">
-            <Link
-              to="/categories"
-              className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <Tag size={20} />
-              <span>Categories</span>
-            </Link>
-            {user ? (
-              <>
+            {/* Main Navigation */}
+            <div className="border-b border-gray-200 pb-2">
+              <Link
+                to="/categories"
+                className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Tag size={20} />
+                <span>Categories</span>
+              </Link>
+              {user && (
                 <Link
                   to="/upload"
                   className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
@@ -95,11 +107,15 @@ export default function Navbar() {
                   <Upload size={20} />
                   <span>Upload</span>
                 </Link>
+              )}
+            </div>
 
+            {user ? (
+              <>
                 {/* Categories Section */}
-                <div className="border-t border-gray-200 my-2 pt-2">
+                <div className="border-b border-gray-200 py-2">
                   <div className="px-3 py-2 text-sm font-medium text-gray-500">
-                    Categories
+                    Browse Categories
                   </div>
                   {Object.entries(CATEGORIES).map(([category, subcategories]) => (
                     <div key={category} className="space-y-1">
@@ -137,7 +153,7 @@ export default function Navbar() {
                 </div>
 
                 {/* My Account Section */}
-                <div className="border-t border-gray-200 my-2 pt-2">
+                <div className="border-b border-gray-200 py-2">
                   <div className="px-3 py-2 text-sm font-medium text-gray-500">
                     My Account
                   </div>
@@ -170,7 +186,7 @@ export default function Navbar() {
                       setIsMobileMenuOpen(false);
                       signOut();
                     }}
-                    className="flex items-center space-x-2 w-full text-left px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                    className="flex items-center space-x-2 w-full text-left px-3 py-2 text-red-600 hover:text-red-700 rounded-md"
                   >
                     <LogOut size={20} />
                     <span>Logout</span>
@@ -178,22 +194,22 @@ export default function Navbar() {
                 </div>
               </>
             ) : (
-              <>
+              <div className="space-y-2 pt-2">
                 <Link
                   to="/login"
-                  className="block px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                  className="block w-full text-center px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md border border-gray-300"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="block px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  className="block w-full text-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Register
                 </Link>
-              </>
+              </div>
             )}
           </div>
         </div>
