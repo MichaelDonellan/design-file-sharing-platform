@@ -34,14 +34,15 @@ export default function Navbar() {
             </Link>
           </div>
           
-          {/* Profile icon for mobile */}
+          {/* Mobile Profile Icon */}
           {user && (
             <div className="lg:hidden">
-              <Link to="/dashboard/profile" className="p-2 rounded-full hover:bg-gray-100">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                  {user.email.charAt(0).toUpperCase()}
-                </div>
-              </Link>
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 rounded-full bg-blue-500 text-white"
+              >
+                <User size={20} />
+              </button>
             </div>
           )}
           
@@ -88,32 +89,71 @@ export default function Navbar() {
         {/* Mobile menu */}
         <div className={`lg:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
           <div className="px-2 pt-2 pb-3 space-y-1">
-            {/* Main Navigation */}
-            <div className="border-b border-gray-200 pb-2">
-              <Link
-                to="/categories"
-                className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <Tag size={20} />
-                <span>Categories</span>
-              </Link>
-              {user && (
-                <Link
-                  to="/upload"
-                  className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Upload size={20} />
-                  <span>Upload</span>
-                </Link>
-              )}
-            </div>
-
             {user ? (
               <>
+                {/* Profile Section */}
+                <div className="border-b border-gray-200 pb-2 mb-2">
+                  <div className="px-3 py-2 text-sm font-medium text-gray-500">
+                    My Account
+                  </div>
+                  <Link
+                    to="/dashboard/profile"
+                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <User size={20} />
+                    <span>Profile</span>
+                  </Link>
+                  <Link
+                    to="/dashboard/store"
+                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Store size={20} />
+                    <span>Store</span>
+                  </Link>
+                  <Link
+                    to="/dashboard/settings"
+                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Settings size={20} />
+                    <span>Settings</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      signOut();
+                    }}
+                    className="flex items-center space-x-2 w-full text-left px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                  >
+                    <LogOut size={20} />
+                    <span>Logout</span>
+                  </button>
+                </div>
+
+                {/* Main Navigation */}
+                <div className="border-b border-gray-200 pb-2 mb-2">
+                  <Link
+                    to="/upload"
+                    className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Upload size={20} />
+                    <span>Upload</span>
+                  </Link>
+                  <Link
+                    to="/categories"
+                    className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Tag size={20} />
+                    <span>Categories</span>
+                  </Link>
+                </div>
+
                 {/* Categories Section */}
-                <div className="border-b border-gray-200 py-2">
+                <div>
                   <div className="px-3 py-2 text-sm font-medium text-gray-500">
                     Browse Categories
                   </div>
@@ -151,65 +191,24 @@ export default function Navbar() {
                     </div>
                   ))}
                 </div>
-
-                {/* My Account Section */}
-                <div className="border-b border-gray-200 py-2">
-                  <div className="px-3 py-2 text-sm font-medium text-gray-500">
-                    My Account
-                  </div>
-                  <Link
-                    to="/dashboard/profile"
-                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <User size={20} />
-                    <span>Profile</span>
-                  </Link>
-                  <Link
-                    to="/dashboard/store"
-                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Store size={20} />
-                    <span>Store</span>
-                  </Link>
-                  <Link
-                    to="/dashboard/settings"
-                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Settings size={20} />
-                    <span>Settings</span>
-                  </Link>
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      signOut();
-                    }}
-                    className="flex items-center space-x-2 w-full text-left px-3 py-2 text-red-600 hover:text-red-700 rounded-md"
-                  >
-                    <LogOut size={20} />
-                    <span>Logout</span>
-                  </button>
-                </div>
               </>
             ) : (
-              <div className="space-y-2 pt-2">
+              <>
                 <Link
                   to="/login"
-                  className="block w-full text-center px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md border border-gray-300"
+                  className="block px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="block w-full text-center px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  className="block px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Register
                 </Link>
-              </div>
+              </>
             )}
           </div>
         </div>

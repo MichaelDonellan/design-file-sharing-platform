@@ -1,13 +1,13 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { Link } from 'react-router-dom';
-import { User, Store, Settings, LogOut, BarChart3, LineChart } from 'lucide-react';
+import { User, Store, Settings, LogOut, BarChart3, LineChart, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { Store as StoreType } from '../types';
 
 export default function UserMenu() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const [store, setStore] = useState<StoreType | null>(null);
 
   useEffect(() => {
@@ -60,6 +60,21 @@ export default function UserMenu() {
                 </Link>
               )}
             </Menu.Item>
+            {isAdmin && (
+              <Menu.Item>
+                {({ active }) => (
+                  <Link
+                    to="/dashboard/admin"
+                    className={`${
+                      active ? 'bg-gray-100' : ''
+                    } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
+                  >
+                    <Shield className="mr-2 h-5 w-5" />
+                    Admin Dashboard
+                  </Link>
+                )}
+              </Menu.Item>
+            )}
             <Menu.Item>
               {({ active }) => (
                 <Link
