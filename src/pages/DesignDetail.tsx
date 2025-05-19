@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import type { Design, Store, Review, DesignMockup, DesignFile } from '../types';
-import { Download, Calendar, Tag, Store as StoreIcon, Star, ShoppingCart } from 'lucide-react';
+import { Download, Calendar, Tag, Store as StoreIcon, Star, ShoppingCart, Heart, Share2, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import ImageCarousel from '../components/ImageCarousel';
 import ReviewForm from '../components/ReviewForm';
@@ -26,6 +27,8 @@ const EXCHANGE_RATES: Record<string, number> = {
 
 export default function DesignDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [design, setDesign] = useState<Design | null>(null);
   const [store, setStore] = useState<Store | null>(null);
   const [mockups, setMockups] = useState<DesignMockup[]>([]);
@@ -34,113 +37,133 @@ export default function DesignDetail() {
   const [loading, setLoading] = useState(true);
   const [relatedDesigns, setRelatedDesigns] = useState<Design[]>([]);
   const [stripeLoading, setStripeLoading] = useState(false);
-  const [user, setUser] = useState(null);
   const [currency, setCurrency] = useState('USD');
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    async function fetchData() {
-      if (!id) return;
+    if (id) {
+      fetchDesign();
+      incrementView();
+    }
+  }, [id]);
 
-      const { data: designData, error: designError } = await supabase
+  const fetchDesign = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
         .from('designs')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (designError) {
-        console.error('Error fetching design:', designError);
-        setLoading(false);
-        return;
-      }
+      if (error) throw error;
 
-      setDesign(designData);
+      if (data) {
+        setDesign(data);
+        // Check if the current user has favorited this design
+        if (user) {
+          const { data: favoriteData } = await supabase
+            .from('design_favorites')
+            .select('id')
+            .eq('design_id', id)
+            .eq('user_id', user.id)
+            .single();
+          
+          setIsFavorited(!!favoriteData);
+        }
 
-      // Fetch store data
-      if (designData.store_id) {
-        const { data: storeData } = await supabase
-          .from('stores')
+        // Fetch store data
+        if (data.store_id) {
+          const { data: storeData } = await supabase
+            .from('stores')
+            .select('*')
+            .eq('id', data.store_id)
+            .single();
+
+          setStore(storeData);
+
+          // Fetch related designs from the same store
+          const { data: relatedData } = await supabase
+            .from('designs')
+            .select('*')
+            .eq('store_id', data.store_id)
+            .neq('id', id)
+            .limit(3);
+
+          if (relatedData) {
+            setRelatedDesigns(relatedData);
+          }
+        }
+
+        // Fetch mockups
+        const { data: mockupsData } = await supabase
+          .from('design_mockups')
           .select('*')
-          .eq('id', designData.store_id)
-          .single();
+          .eq('design_id', id)
+          .order('display_order');
 
-        setStore(storeData);
+        if (mockupsData) {
+          setMockups(mockupsData);
+        }
 
-        // Fetch related designs from the same store
-        const { data: relatedData } = await supabase
-          .from('designs')
+        // Fetch files
+        const { data: filesData } = await supabase
+          .from('design_files')
           .select('*')
-          .eq('store_id', designData.store_id)
-          .neq('id', id)
-          .limit(3);
+          .eq('design_id', id)
+          .order('display_order');
 
-        if (relatedData) {
-          setRelatedDesigns(relatedData);
+        if (filesData) {
+          setFiles(filesData);
+        }
+
+        // Fetch reviews - Modified query to not use foreign key relationship
+        const { data: reviewsData } = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('design_id', id)
+          .order('created_at', { ascending: false });
+
+        if (reviewsData) {
+          // Fetch user data separately for each review
+          const reviewsWithUsers = await Promise.all(
+            reviewsData.map(async (review) => {
+              const { data: userData } = await supabase
+                .from('auth.users')
+                .select('id, email')
+                .eq('id', review.user_id)
+                .single();
+              
+              return {
+                ...review,
+                user: userData
+              };
+            })
+          );
+          
+          setReviews(reviewsWithUsers);
         }
       }
-
-      // Fetch mockups
-      const { data: mockupsData } = await supabase
-        .from('design_mockups')
-        .select('*')
-        .eq('design_id', id)
-        .order('display_order');
-
-      if (mockupsData) {
-        setMockups(mockupsData);
-      }
-
-      // Fetch files
-      const { data: filesData } = await supabase
-        .from('design_files')
-        .select('*')
-        .eq('design_id', id)
-        .order('display_order');
-
-      if (filesData) {
-        setFiles(filesData);
-      }
-
-      // Fetch reviews - Modified query to not use foreign key relationship
-      const { data: reviewsData } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('design_id', id)
-        .order('created_at', { ascending: false });
-
-      if (reviewsData) {
-        // Fetch user data separately for each review
-        const reviewsWithUsers = await Promise.all(
-          reviewsData.map(async (review) => {
-            const { data: userData } = await supabase
-              .from('auth.users')
-              .select('id, email')
-              .eq('id', review.user_id)
-              .single();
-            
-            return {
-              ...review,
-              user: userData
-            };
-          })
-        );
-        
-        setReviews(reviewsWithUsers);
-      }
-
+    } catch (err) {
+      console.error('Error fetching design:', err);
+      setError('Failed to load design');
+    } finally {
       setLoading(false);
     }
+  };
 
-    fetchData();
-  }, [id]);
-
-  useEffect(() => {
-    async function fetchUser() {
-      const { data: userData } = await supabase.auth.getUser();
-      setUser(userData.user);
+  const incrementView = async () => {
+    try {
+      const { error } = await supabase.rpc('increment_design_views', {
+        design_id: id
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error incrementing view:', err);
     }
-
-    fetchUser();
-  }, []);
+  };
 
   useEffect(() => {
     const stored = localStorage.getItem('preferredCurrency');
@@ -162,126 +185,87 @@ export default function DesignDetail() {
       .catch(() => {});
   }, []);
 
-  const handleDownload = async () => {
-    if (!design) return;
+  const toggleFavorite = async () => {
     if (!user) {
-      // Redirect to signup page if not logged in
-      window.location.href = '/signup';
+      navigate('/login');
       return;
     }
 
     try {
-      setLoading(true);
-      
-      // If it's a freebie, just download
-      if (design.is_freebie) {
-        const { data: files, error: filesError } = await supabase
-          .from('design_files')
-          .select('*')
-          .eq('design_id', design.id)
-          .order('display_order');
+      setIsProcessing(true);
+      if (isFavorited) {
+        // Remove from favorites
+        const { error } = await supabase
+          .from('design_favorites')
+          .delete()
+          .eq('design_id', id)
+          .eq('user_id', user.id);
 
-        if (filesError) {
-          throw new Error('Failed to fetch design files');
-        }
-
-        if (!files || files.length === 0) {
-          throw new Error('No files found for this design');
-        }
-
-        // Extract the file path from the public URL
-        const publicUrl = files[0].file_path;
-        // The URL format is: https://[project-ref].supabase.co/storage/v1/object/public/designs/[file-path]
-        const urlParts = publicUrl.split('/storage/v1/object/public/designs/');
-        if (urlParts.length !== 2) {
-          throw new Error('Invalid file path format');
-        }
-        const filePath = urlParts[1];
-        console.log('Downloading file with path:', filePath);
-
-        // Download the file using the extracted path
-        const { data: fileData, error: downloadError } = await supabase.storage
-          .from('designs')
-          .download(filePath);
-
-        if (downloadError) {
-          console.error('Storage error:', downloadError);
-          throw new Error('Failed to download file. Please try again later.');
-        }
-
-        if (!fileData) {
-          throw new Error('No file data received');
-        }
-
-        const url = URL.createObjectURL(fileData);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filePath.split('/').pop() || 'design';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        // Update download count
-        await supabase
-          .from('designs')
-          .update({ downloads: (design.downloads || 0) + 1 })
-          .eq('id', design.id);
+        if (error) throw error;
+        setIsFavorited(false);
       } else {
-        // For paid products, redirect to checkout
-        setStripeLoading(true);
-        console.log('Creating checkout session for design:', design.id);
-        
-        const { data: session, error: sessionError } = await supabase.functions.invoke('create-checkout-session', {
-          body: { designId: design.id }
-        });
-        
-        console.log('Checkout session response:', { session, sessionError });
-        
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          toast.error('Failed to create checkout session: ' + sessionError.message);
-          return;
-        }
-        
-        if (!session) {
-          console.error('No session data received');
-          toast.error('No session data received from server');
-          return;
-        }
-        
-        console.log("Stripe session object:", session);
-        let parsedSession = session;
-        if (typeof session === "string") {
-          try {
-            parsedSession = JSON.parse(session);
-          } catch (e) {
-            console.error("Failed to parse session string:", session);
-            toast.error("Failed to parse server response.");
-            return;
-          }
-        }
+        // Add to favorites
+        const { error } = await supabase
+          .from('design_favorites')
+          .insert({
+            design_id: id,
+            user_id: user.id
+          });
 
-        const checkoutUrl =
-          parsedSession?.url ||
-          (parsedSession?.data && parsedSession.data.url);
-
-        console.log("checkoutUrl:", checkoutUrl, "type:", typeof checkoutUrl);
-
-        if (checkoutUrl) {
-          console.log('Redirecting to:', checkoutUrl);
-          window.location.href = checkoutUrl;
-        } else {
-          console.error('No valid checkout URL in session:', parsedSession);
-          toast.error('No valid checkout URL received from server');
-        }
+        if (error) throw error;
+        setIsFavorited(true);
       }
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to process your request');
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+      alert('Failed to update favorite status');
     } finally {
-      setLoading(false);
-      setStripeLoading(false);
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!design) return;
+
+    if (design.price && !user) {
+      navigate('/login');
+      return;
+    }
+
+    if (design.price && user) {
+      // Handle purchase/download logic here
+      // This would typically involve payment processing
+      alert('Purchase functionality coming soon!');
+      return;
+    }
+
+    // For free designs, proceed with download
+    try {
+      const { data, error } = await supabase.storage
+        .from('designs')
+        .download(design.file_path);
+
+      if (error) throw error;
+
+      // Create a download link and trigger it
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = design.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Increment download count
+      const { error: updateError } = await supabase
+        .from('designs')
+        .update({ downloads: (design.downloads || 0) + 1 })
+        .eq('id', design.id);
+
+      if (updateError) throw updateError;
+    } catch (err) {
+      console.error('Error downloading design:', err);
+      alert('Failed to download design');
     }
   };
 
@@ -303,10 +287,16 @@ export default function DesignDetail() {
     );
   }
 
-  if (!design || mockups.length === 0) {
+  if (error || !design) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-800">Design not found</h2>
+        <div className="text-red-600 mb-4">{error || 'Design not found'}</div>
+        <button 
+          onClick={() => navigate(-1)}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Go Back
+        </button>
       </div>
     );
   }
@@ -314,6 +304,31 @@ export default function DesignDetail() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="relative">
+          <img
+            src={design.thumbnail_url || '/placeholder.png'}
+            alt={design.name}
+            className="w-full h-96 object-cover"
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
+            <h1 className="text-3xl font-bold text-white mb-2">{design.name}</h1>
+            <div className="flex items-center space-x-4 text-white">
+              <div className="flex items-center">
+                <Eye className="w-5 h-5 mr-1" />
+                <span>{design.views || 0} views</span>
+              </div>
+              <div className="flex items-center">
+                <Heart className="w-5 h-5 mr-1" />
+                <span>{design.favorites || 0} favorites</span>
+              </div>
+              <div className="flex items-center">
+                <Download className="w-5 h-5 mr-1" />
+                <span>{design.downloads || 0} downloads</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -410,33 +425,58 @@ export default function DesignDetail() {
             </p>
           </div>
 
-          {/* Buy/Download button - require login */}
-          <div className="mt-6">
-            {user ? (
-              design.price && design.price > 0 ? (
-                <button
-                  onClick={handleDownload}
-                  disabled={stripeLoading}
-                  className="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  {stripeLoading ? 'Processing...' : 'Buy Now'}
-                </button>
-              ) : (
-                <button
-                  onClick={handleDownload}
-                  className="w-full bg-green-600 text-white py-3 rounded-md font-semibold hover:bg-green-700 transition-colors"
-                >
-                  Download
-                </button>
-              )
-            ) : (
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <p className="text-gray-600 mb-4">{design.description}</p>
+              <div className="flex flex-wrap gap-2">
+                {design.tags?.map((tag) => (
+                  <span
+                    key={tag}
+                    className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="flex space-x-4">
               <button
-                onClick={() => navigate('/login')}
-                className="w-full bg-blue-600 text-white py-3 rounded-md font-semibold hover:bg-blue-700 transition-colors"
+                onClick={toggleFavorite}
+                disabled={isProcessing}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
+                  isFavorited
+                    ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
               >
-                {design.price && design.price > 0 ? 'Buy Now' : 'Download'}
+                <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
+                <span>{isFavorited ? 'Favorited' : 'Favorite'}</span>
               </button>
-            )}
+              <button
+                onClick={handleDownload}
+                className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+              >
+                <Download className="w-5 h-5" />
+                <span>{design.price ? `Buy for $${design.price}` : 'Download'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  navigator.share({
+                    title: design.name,
+                    text: design.description,
+                    url: window.location.href
+                  }).catch(() => {
+                    // Fallback for browsers that don't support Web Share API
+                    navigator.clipboard.writeText(window.location.href);
+                    alert('Link copied to clipboard!');
+                  });
+                }}
+                className="flex items-center space-x-2 bg-gray-100 text-gray-600 px-4 py-2 rounded-md hover:bg-gray-200"
+              >
+                <Share2 className="w-5 h-5" />
+                <span>Share</span>
+              </button>
+            </div>
           </div>
 
           <div className="border-t pt-8">

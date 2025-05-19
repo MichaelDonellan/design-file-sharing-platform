@@ -213,13 +213,13 @@ export default function Settings() {
           </div>
 
           <div className="pt-4">
-            <button
-              type="submit"
-              disabled={loading}
+          <button
+            type="submit"
+            disabled={loading}
               className="w-full px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Saving...' : 'Save Settings'}
-            </button>
+          >
+            {loading ? 'Saving...' : 'Save Settings'}
+          </button>
           </div>
         </form>
       </div>
