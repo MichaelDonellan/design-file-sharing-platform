@@ -189,11 +189,17 @@ export default function DesignDetail() {
           throw new Error('No files found for this design');
         }
 
-        // Get the file path from the database
-        const filePath = files[0].file_path;
+        // Extract the file path from the public URL
+        const publicUrl = files[0].file_path;
+        // The URL format is: https://[project-ref].supabase.co/storage/v1/object/public/designs/[file-path]
+        const urlParts = publicUrl.split('/storage/v1/object/public/designs/');
+        if (urlParts.length !== 2) {
+          throw new Error('Invalid file path format');
+        }
+        const filePath = urlParts[1];
         console.log('Downloading file with path:', filePath);
 
-        // Download the file directly using the file path
+        // Download the file using the extracted path
         const { data: fileData, error: downloadError } = await supabase.storage
           .from('designs')
           .download(filePath);
