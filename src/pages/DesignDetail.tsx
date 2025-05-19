@@ -164,12 +164,12 @@ export default function DesignDetail() {
 
   const handleDownload = async () => {
     if (!design) return;
-    if (!user) {
+      if (!user) {
       // Redirect to signup page if not logged in
       window.location.href = '/signup';
-      return;
-    }
-    
+        return;
+      }
+
     try {
       setLoading(true);
       
@@ -213,10 +213,10 @@ export default function DesignDetail() {
         URL.revokeObjectURL(url);
 
         // Update download count
-        await supabase
-          .from('designs')
-          .update({ downloads: (design.downloads || 0) + 1 })
-          .eq('id', design.id);
+      await supabase
+        .from('designs')
+        .update({ downloads: (design.downloads || 0) + 1 })
+        .eq('id', design.id);
 
       } else {
         // For paid products, redirect to checkout
@@ -319,7 +319,7 @@ export default function DesignDetail() {
                   ) : (
                     <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
                   )}
-                </div>
+                  </div>
               </div>
               {/* Tags below main info */}
               {design.tags && design.tags.length > 0 && (
