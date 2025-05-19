@@ -180,6 +180,7 @@ export default function Categories() {
     setSearchQuery(value);
     updateSuggestions(value);
     setShowSuggestions(true);
+    // Remove auto-blur to keep keyboard open while typing
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -187,10 +188,11 @@ export default function Categories() {
       e.preventDefault();
       setActiveSearchQuery(searchQuery);
       setShowSuggestions(false);
-      // Blur the input to dismiss keyboard on mobile
+      // Only blur on explicit search action
       e.currentTarget.blur();
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);
+      // Only blur on explicit escape action
       e.currentTarget.blur();
     }
   };
@@ -199,7 +201,7 @@ export default function Categories() {
     setSearchQuery(suggestion.name);
     setActiveSearchQuery(suggestion.name);
     setShowSuggestions(false);
-    // Blur the input to dismiss keyboard on mobile
+    // Only blur when explicitly selecting a suggestion
     const input = document.querySelector('input[type="text"]') as HTMLInputElement;
     if (input) input.blur();
   };
@@ -244,7 +246,7 @@ export default function Categories() {
             e.preventDefault();
             setActiveSearchQuery(searchQuery);
             setShowSuggestions(false);
-            // Blur the input to dismiss keyboard on mobile
+            // Only blur on explicit form submission
             const input = document.querySelector('input[type="text"]') as HTMLInputElement;
             if (input) input.blur();
           }} className="relative">
@@ -257,20 +259,21 @@ export default function Categories() {
                 onFocus={() => setShowSuggestions(true)}
                 placeholder="Search designs or categories..."
                 className="w-full px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                // Add inputmode to show appropriate keyboard on mobile
-                inputMode="search"
-                // Prevent auto-capitalization on mobile
+                // Remove inputMode to use default keyboard
+                // Remove auto-capitalization
                 autoCapitalize="off"
-                // Prevent auto-correct on mobile
+                // Remove auto-correct
                 autoCorrect="off"
-                // Prevent auto-complete suggestions
+                // Remove auto-complete
                 autoComplete="off"
+                // Add spellCheck off to prevent spell check popup
+                spellCheck="false"
               />
               <button
                 type="submit"
                 className="bg-blue-500 text-white px-4 py-2 rounded-r-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center"
                 onClick={() => {
-                  // Blur the input to dismiss keyboard on mobile
+                  // Only blur on explicit button click
                   const input = document.querySelector('input[type="text"]') as HTMLInputElement;
                   if (input) input.blur();
                 }}
@@ -284,16 +287,14 @@ export default function Categories() {
           {showSuggestions && suggestions.length > 0 && (
             <div 
               className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto"
-              // Add touch-action to prevent scrolling issues on mobile
-              style={{ touchAction: 'manipulation' }}
+              // Remove touch-action to allow normal touch behavior
             >
               {suggestions.map((suggestion) => (
                 <button
                   key={`${suggestion.type}-${suggestion.id}`}
                   onClick={() => handleSuggestionClick(suggestion)}
                   className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 flex items-center justify-between"
-                  // Add touch-action to prevent scrolling issues on mobile
-                  style={{ touchAction: 'manipulation' }}
+                  // Remove touch-action to allow normal touch behavior
                 >
                   <div className="flex items-center">
                     <Tag size={16} className="mr-2 text-gray-500" />
