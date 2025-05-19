@@ -31,6 +31,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>({ main: 'all' });
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [currency, setCurrency] = useState('USD');
+  const [designMockups, setDesignMockups] = useState<Record<string, string>>({});
 
   useEffect(() => {
     // Try to get preferred currency from localStorage
@@ -88,16 +89,35 @@ export default function Home() {
           query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,tags.cs.{${searchQuery}}`);
         }
 
-        const { data, error: supabaseError } = await query;
+        const { data: designsData, error: supabaseError } = await query;
 
         if (supabaseError) {
           throw supabaseError;
         }
 
-        if (isMounted) {
-          if (data) {
-            setDesigns(data);
-            setError(null);
+        if (isMounted && designsData) {
+          setDesigns(designsData);
+          setError(null);
+
+          // Fetch mockups for all designs
+          const { data: mockupsData, error: mockupsError } = await supabase
+            .from('design_mockups')
+            .select('design_id, mockup_path')
+            .in('design_id', designsData.map(d => d.id))
+            .order('display_order');
+
+          if (mockupsError) {
+            console.error('Error fetching mockups:', mockupsError);
+          } else if (mockupsData) {
+            // Create a map of design_id to first mockup path
+            const mockupMap = mockupsData.reduce((acc, mockup) => {
+              if (!acc[mockup.design_id]) {
+                acc[mockup.design_id] = mockup.mockup_path;
+              }
+              return acc;
+            }, {} as Record<string, string>);
+            
+            setDesignMockups(mockupMap);
           }
         }
       } catch (err) {
@@ -159,60 +179,64 @@ export default function Home() {
           ))}
         </select>
       </div>
-      <div className="flex gap-8">
+    <div className="flex gap-8">
         {/* Category sidebar - desktop only */}
         <div className="hidden lg:block">
-        <CategorySidebar
-          selectedCategory={selectedCategory.main}
-          selectedSubcategory={selectedCategory.sub}
-          onCategorySelect={(category, subcategory) => {
-            setSelectedCategory({ main: category, sub: subcategory });
-          }}
-        />
+      <CategorySidebar
+        selectedCategory={selectedCategory.main}
+        selectedSubcategory={selectedCategory.sub}
+        onCategorySelect={(category, subcategory) => {
+          setSelectedCategory({ main: category, sub: subcategory });
+        }}
+      />
         </div>
 
-        <div className="flex-1">
-          <div className="mb-8 space-y-4">
-            <h1 className="text-3xl font-bold">Browse Designs</h1>
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-            />
-          </div>
+      <div className="flex-1">
+        <div className="mb-8 space-y-4">
+          <h1 className="text-3xl font-bold">Browse Designs</h1>
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+          />
+        </div>
 
-          {designs.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow">
-              <p className="text-gray-600 mb-4">No designs found</p>
+        {designs.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
+            <p className="text-gray-600 mb-4">No designs found</p>
+            <Link
+              to="/upload"
+              className="inline-flex items-center space-x-2 bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600"
+            >
+              <span>Upload a Design</span>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {designs.map((design) => (
               <Link
-                to="/upload"
-                className="inline-flex items-center space-x-2 bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600"
+                key={design.id}
+                to={`/design/${design.id}`}
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
-                <span>Upload a Design</span>
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {designs.map((design) => (
-                <Link
-                  key={design.id}
-                  to={`/design/${design.id}`}
-                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-                >
-                  <div className="aspect-w-16 aspect-h-9">
-                    <img
-                      src={design.mockup_path}
-                      alt={design.name}
-                      className="w-full h-48 object-cover"
-                    />
-                  </div>
-                  <div className="p-4">
+                <div className="aspect-w-16 aspect-h-9">
+                  <img
+                    src={designMockups[design.id] || '/placeholder.png'}
+                    alt={design.name}
+                    className="w-full h-48 object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/placeholder.png';
+                    }}
+                  />
+                </div>
+                <div className="p-4">
                     <h3 className="font-semibold text-gray-900 truncate max-w-full">{design.name}</h3>
                     {/* Price badge */}
                     <div className="mt-2">
                       {design.price && design.price > 0 ? (
                         <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
                           {getCurrencySymbol(currency)}{convertPrice(design.price, currency).toFixed(2)}
-                        </span>
+                    </span>
                       ) : (
                         <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
                       )}
@@ -239,11 +263,11 @@ export default function Home() {
                     {/* <button className="mt-3 w-full bg-blue-600 text-white py-2 rounded-md font-semibold hover:bg-blue-700 transition-colors">
                       {design.price && design.price > 0 ? 'Buy Now' : 'Download'}
                     </button> */}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
         </div>
       </div>
     </div>
