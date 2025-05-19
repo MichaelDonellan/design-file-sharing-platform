@@ -6,6 +6,7 @@ import DesignDetail from './pages/DesignDetail';
 import Upload from './pages/Upload';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import Profile from './pages/dashboard/Profile';
 import Store from './pages/dashboard/Store';
 import Settings from './pages/dashboard/Settings';
@@ -38,6 +39,7 @@ function App() {
               />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route
                 path="/dashboard/profile"
                 element={
