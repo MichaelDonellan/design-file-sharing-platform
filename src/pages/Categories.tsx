@@ -17,12 +17,12 @@ export default function Categories() {
   const [designs, setDesigns] = useState<Record<string, Design[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeSearchQuery, setActiveSearchQuery] = useState('');
   const [designMockups, setDesignMockups] = useState<Record<string, string>>({});
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -162,7 +162,7 @@ export default function Categories() {
       });
     });
 
-    // Sort suggestions by relevance (exact matches first, then partial matches)
+    // Sort suggestions by relevance
     newSuggestions.sort((a, b) => {
       const aExact = a.name.toLowerCase() === searchLower;
       const bExact = b.name.toLowerCase() === searchLower;
@@ -171,20 +171,23 @@ export default function Categories() {
       return a.name.localeCompare(b.name);
     });
 
-    // Limit to 5 suggestions
     setSuggestions(newSuggestions.slice(0, 5));
   };
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    updateSuggestions(value);
-    setShowSuggestions(true);
+  const handleSearch = () => {
+    if (inputRef.current) {
+      const query = inputRef.current.value;
+      setActiveSearchQuery(query);
+      setShowSuggestions(false);
+    }
   };
 
-  const handleSearch = () => {
-    setActiveSearchQuery(searchQuery);
-    setShowSuggestions(false);
+  const handleInputChange = () => {
+    if (inputRef.current) {
+      const query = inputRef.current.value;
+      updateSuggestions(query);
+      setShowSuggestions(true);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -197,9 +200,11 @@ export default function Categories() {
   };
 
   const handleSuggestionClick = (suggestion: SearchSuggestion) => {
-    setSearchQuery(suggestion.name);
-    setActiveSearchQuery(suggestion.name);
-    setShowSuggestions(false);
+    if (inputRef.current) {
+      inputRef.current.value = suggestion.name;
+      setActiveSearchQuery(suggestion.name);
+      setShowSuggestions(false);
+    }
   };
 
   const filterDesigns = (designs: Design[]) => {
@@ -240,9 +245,10 @@ export default function Categories() {
         <div ref={searchRef} className="relative">
           <div className="flex">
             <input
+              ref={inputRef}
               type="text"
-              value={searchQuery}
-              onChange={handleSearchChange}
+              defaultValue=""
+              onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               onFocus={() => setShowSuggestions(true)}
               placeholder="Search designs or categories..."
