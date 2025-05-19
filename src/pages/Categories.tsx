@@ -180,20 +180,19 @@ export default function Categories() {
     setSearchQuery(value);
     updateSuggestions(value);
     setShowSuggestions(true);
-    // Remove auto-blur to keep keyboard open while typing
+  };
+
+  const handleSearch = () => {
+    setActiveSearchQuery(searchQuery);
+    setShowSuggestions(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      setActiveSearchQuery(searchQuery);
-      setShowSuggestions(false);
-      // Only blur on explicit search action
-      e.currentTarget.blur();
+      handleSearch();
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);
-      // Only blur on explicit escape action
-      e.currentTarget.blur();
     }
   };
 
@@ -201,9 +200,6 @@ export default function Categories() {
     setSearchQuery(suggestion.name);
     setActiveSearchQuery(suggestion.name);
     setShowSuggestions(false);
-    // Only blur when explicitly selecting a suggestion
-    const input = document.querySelector('input[type="text"]') as HTMLInputElement;
-    if (input) input.blur();
   };
 
   const filterDesigns = (designs: Design[]) => {
@@ -242,59 +238,37 @@ export default function Categories() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-4">Browse Categories</h1>
         <div ref={searchRef} className="relative">
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            setActiveSearchQuery(searchQuery);
-            setShowSuggestions(false);
-            // Only blur on explicit form submission
-            const input = document.querySelector('input[type="text"]') as HTMLInputElement;
-            if (input) input.blur();
-          }} className="relative">
-            <div className="flex">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                onKeyDown={handleKeyDown}
-                onFocus={() => setShowSuggestions(true)}
-                placeholder="Search designs or categories..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                // Remove inputMode to use default keyboard
-                // Remove auto-capitalization
-                autoCapitalize="off"
-                // Remove auto-correct
-                autoCorrect="off"
-                // Remove auto-complete
-                autoComplete="off"
-                // Add spellCheck off to prevent spell check popup
-                spellCheck="false"
-              />
-              <button
-                type="submit"
-                className="bg-blue-500 text-white px-4 py-2 rounded-r-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center"
-                onClick={() => {
-                  // Only blur on explicit button click
-                  const input = document.querySelector('input[type="text"]') as HTMLInputElement;
-                  if (input) input.blur();
-                }}
-              >
-                <Search size={20} />
-              </button>
-            </div>
-          </form>
+          <div className="flex">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setShowSuggestions(true)}
+              placeholder="Search designs or categories..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoCapitalize="off"
+              autoCorrect="off"
+              autoComplete="off"
+              spellCheck="false"
+            />
+            <button
+              type="button"
+              onClick={handleSearch}
+              className="bg-blue-500 text-white px-4 py-2 rounded-r-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center"
+            >
+              <Search size={20} />
+            </button>
+          </div>
 
           {/* Suggestions dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <div 
-              className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto"
-              // Remove touch-action to allow normal touch behavior
-            >
+            <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
               {suggestions.map((suggestion) => (
                 <button
                   key={`${suggestion.type}-${suggestion.id}`}
                   onClick={() => handleSuggestionClick(suggestion)}
                   className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 flex items-center justify-between"
-                  // Remove touch-action to allow normal touch behavior
                 >
                   <div className="flex items-center">
                     <Tag size={16} className="mr-2 text-gray-500" />
