@@ -164,11 +164,11 @@ export default function DesignDetail() {
 
   const handleDownload = async () => {
     if (!design) return;
-      if (!user) {
+    if (!user) {
       // Redirect to signup page if not logged in
       window.location.href = '/signup';
-        return;
-      }
+      return;
+    }
 
     try {
       setLoading(true);
@@ -189,10 +189,14 @@ export default function DesignDetail() {
           throw new Error('No files found for this design');
         }
 
-        // Download the first file
+        // Get the file path from the database
+        const filePath = files[0].file_path;
+        console.log('Downloading file with path:', filePath);
+
+        // Download the file directly using the file path
         const { data: fileData, error: downloadError } = await supabase.storage
           .from('designs')
-          .download(files[0].file_path);
+          .download(filePath);
 
         if (downloadError) {
           console.error('Storage error:', downloadError);
@@ -206,18 +210,17 @@ export default function DesignDetail() {
         const url = URL.createObjectURL(fileData);
         const a = document.createElement('a');
         a.href = url;
-        a.download = files[0].file_path.split('/').pop() || 'design';
+        a.download = filePath.split('/').pop() || 'design';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
         // Update download count
-      await supabase
-        .from('designs')
-        .update({ downloads: (design.downloads || 0) + 1 })
-        .eq('id', design.id);
-
+        await supabase
+          .from('designs')
+          .update({ downloads: (design.downloads || 0) + 1 })
+          .eq('id', design.id);
       } else {
         // For paid products, redirect to checkout
         setStripeLoading(true);
