@@ -3,18 +3,27 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { Design } from '../../types';
 
-interface Listing {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  category: string;
-  tags: string[];
-  preview_image: string;
-  files: string[];
-  status: string;
-}
+export default function EditListing() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [listing, setListing] = useState<Design | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [previewImage, setPreviewImage] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPreviewImage(file);
+    }
+  };
+
+  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newFiles = Array.from(e.target.files || []);
+    setFiles(prev => [...prev, ...newFiles]);
+  };
 
 export default function EditListing() {
   const { user } = useAuth();
@@ -35,12 +44,17 @@ export default function EditListing() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('listings')
+        .from('designs')
         .select('*')
         .eq('id', id)
         .single();
 
       if (error) throw error;
+      if (!data) {
+        toast.error('Listing not found');
+        navigate('/dashboard/seller');
+        return;
+      }
       setListing(data);
     } catch (error) {
       console.error('Error fetching listing:', error);
@@ -58,16 +72,17 @@ export default function EditListing() {
     try {
       setLoading(true);
 
-      // Update listing data
+      // Update design data
       const { error: updateError } = await supabase
-        .from('listings')
+        .from('designs')
         .update({
-          title: listing.title,
+          name: listing.name,
           description: listing.description,
           price: listing.price,
           category: listing.category,
           tags: listing.tags,
-          status: listing.status,
+          is_freebie: listing.is_freebie,
+          file_type: listing.file_type
         })
         .eq('id', listing.id);
 
@@ -76,7 +91,7 @@ export default function EditListing() {
       // Handle file uploads if new files were added
       if (previewImage) {
         const { error: imageError } = await supabase.storage
-          .from('listings')
+          .from('designs')
           .upload(`previews/${listing.id}`, previewImage);
 
         if (imageError) throw imageError;
@@ -85,17 +100,52 @@ export default function EditListing() {
       // Handle additional files
       for (const file of files) {
         const { error: fileError } = await supabase.storage
-          .from('listings')
+          .from('designs')
           .upload(`files/${listing.id}/${file.name}`, file);
 
         if (fileError) throw fileError;
       }
 
-      toast.success('Listing updated successfully');
+      toast.success('Design updated successfully');
       navigate('/dashboard/seller');
     } catch (error) {
-      console.error('Error updating listing:', error);
-      toast.error('Failed to update listing');
+      console.error('Error updating design:', error);
+      toast.error('Failed to update design');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!listing) return;
+
+    if (!window.confirm('Are you sure you want to delete this design? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Delete files from storage
+      const { error: storageError } = await supabase.storage
+        .from('designs')
+        .remove([`previews/${listing.id}`, ...listing.files.map(file => `files/${listing.id}/${file}`)]);
+
+      if (storageError) throw storageError;
+
+      // Delete design from database
+      const { error: deleteError } = await supabase
+        .from('designs')
+        .delete()
+        .eq('id', listing.id);
+
+      if (deleteError) throw deleteError;
+
+      toast.success('Design deleted successfully');
+      navigate('/dashboard/seller');
+    } catch (error) {
+      console.error('Error deleting design:', error);
+      toast.error('Failed to delete design');
     } finally {
       setLoading(false);
     }
@@ -115,14 +165,47 @@ export default function EditListing() {
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Title</label>
+          <label className="block text-sm font-medium text-gray-700">Name</label>
           <input
             type="text"
-            value={listing.title}
-            onChange={(e) => setListing({ ...listing, title: e.target.value })}
+            value={listing.name}
+            onChange={(e) => setListing({ ...listing, name: e.target.value })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             required
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">File Type</label>
+          <select
+            value={listing.file_type}
+            onChange={(e) => setListing({ ...listing, file_type: e.target.value })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            required
+          >
+            <option value="">Select file type</option>
+            <option value="psd">PSD</option>
+            <option value="ai">AI</option>
+            <option value="sketch">Sketch</option>
+            <option value="xd">XD</option>
+            <option value="figma">Figma</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Freebie</label>
+          <div className="mt-1">
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                checked={listing.is_freebie}
+                onChange={(e) => setListing({ ...listing, is_freebie: e.target.checked })}
+                className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm">Is this a freebie?</span>
+            </label>
+          </div>
         </div>
 
         <div>
@@ -276,6 +359,21 @@ export default function EditListing() {
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
             {loading ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+        <div className="flex justify-end space-x-4 mt-8">
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Delete
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Save Changes
           </button>
         </div>
       </form>
