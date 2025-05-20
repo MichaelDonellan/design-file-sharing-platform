@@ -385,7 +385,21 @@ export default function Upload() {
 
       if (mockupsError) throw mockupsError;
 
-      toast.success('Design uploaded successfully!');
+      // Notify admin about new pending listing
+      const { error: notifyError } = await supabase
+        .from('notifications')
+        .insert({
+          type: 'new_listing',
+          message: `New listing pending approval: ${name}`,
+          design_id: design.id,
+          created_at: new Date().toISOString()
+        });
+
+      if (notifyError) {
+        console.error('Failed to create notification:', notifyError);
+      }
+
+      toast.success('Design uploaded successfully! It will be reviewed by an admin.');
       navigate(`/design/${design.id}`);
     } catch (err) {
       console.error('Error in handleSubmit:', err);
