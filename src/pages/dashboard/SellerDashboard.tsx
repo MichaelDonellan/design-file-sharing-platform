@@ -4,28 +4,9 @@ import { supabase } from '../../lib/supabase';
 import { toast } from 'react-toastify';
 import { Heart, DollarSign, ShoppingBag, Eye, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Design as Listing, Store } from '../../types';
 
-interface Listing {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  category: string;
-  tags: string[];
-  preview_image: string;
-  files: string[];
-  status: string;
-  favorites: number;
-  sales: number;
-  views: number;
-}
 
-interface Store {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-}
 
 export default function SellerDashboard() {
   const { user } = useAuth();
@@ -38,7 +19,10 @@ export default function SellerDashboard() {
   const [hasStore, setHasStore] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      navigate('/login');
+      return;
+    }
 
     checkStoreStatus();
   }, [user]);
@@ -48,10 +32,15 @@ export default function SellerDashboard() {
       const { data, error } = await supabase
         .from('stores')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user?.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error checking store status:', error);
+        setHasStore(false);
+        return;
+      }
+
       setHasStore(true);
     } catch (error) {
       console.error('Error checking store status:', error);
@@ -69,19 +58,31 @@ export default function SellerDashboard() {
     try {
       setLoading(true);
 
-      // Fetch listings with view counts
+      // Fetch designs
       const { data: listingsData, error: listingsError } = await supabase
-        .from('listings')
+        .from('designs')
         .select('*')
-        .eq('seller_id', user.id)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
-      if (listingsError) throw listingsError;
+      if (listingsError) {
+        console.error('Error fetching seller data:', listingsError);
+        toast.error('Failed to load seller data');
+        return;
+      }
+
+      if (!listingsData) {
+        setListings([]);
+        setFavorites(0);
+        setTotalRevenue(0);
+        setTotalViews(0);
+        return;
+      }
 
       // Calculate totals
-      const totalFavorites = listingsData.reduce((sum, listing) => sum + listing.favorites, 0);
-      const totalRevenue = listingsData.reduce((sum, listing) => sum + listing.price * listing.sales, 0);
-      const totalViews = listingsData.reduce((sum, listing) => sum + listing.views, 0);
+      const totalFavorites = listingsData.reduce((sum, listing) => sum + (listing.average_rating || 0), 0);
+      const totalRevenue = listingsData.reduce((sum, listing) => sum + (listing.price || 0), 0);
+      const totalViews = listingsData.reduce((sum, listing) => sum + (listing.downloads || 0), 0);
 
       setListings(listingsData);
       setFavorites(totalFavorites);
@@ -90,6 +91,10 @@ export default function SellerDashboard() {
     } catch (error) {
       console.error('Error fetching seller data:', error);
       toast.error('Failed to load seller data');
+      setListings([]);
+      setFavorites(0);
+      setTotalRevenue(0);
+      setTotalViews(0);
     } finally {
       setLoading(false);
     }
@@ -176,13 +181,13 @@ export default function SellerDashboard() {
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900">Your Listings</h2>
+            <h2 className="text-lg font-medium text-gray-900">Your Designs</h2>
             <button
               onClick={() => navigate('/dashboard/store')}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
             >
               <Plus className="-ml-1 mr-2 h-5 w-5" />
-              Add New Listing
+              Add New Design
             </button>
           </div>
         </div>
@@ -191,25 +196,22 @@ export default function SellerDashboard() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Title
+                  Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Category
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Views
+                  Downloads
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Favorites
+                  Rating
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sales
+                  Price
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Revenue
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -220,31 +222,22 @@ export default function SellerDashboard() {
               {listings.map((listing) => (
                 <tr key={listing.id} className="border-b">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{listing.title}</div>
+                    <div className="text-sm font-medium text-gray-900">{listing.name}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">{listing.category}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{listing.views.toLocaleString()}</div>
+                    <div className="text-sm text-gray-900">{listing.downloads.toLocaleString()}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{listing.favorites}</div>
+                    <div className="text-sm text-gray-900">{(listing.average_rating || 0).toFixed(1)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{listing.sales}</div>
+                    <div className="text-sm text-gray-900">${(listing.price || 0).toFixed(2)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">${(listing.price * listing.sales).toFixed(2)}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      listing.status === 'active' ? 'bg-green-100 text-green-800' :
-                      listing.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {listing.status}
-                    </span>
+                    <div className="text-sm text-gray-900">${(listing.price || 0) * (listing.downloads || 0).toFixed(2)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
