@@ -12,31 +12,13 @@ export default function EditListing() {
   const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [files, setFiles] = useState<File[]>([]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPreviewImage(file);
-    }
-  };
-
-  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newFiles = Array.from(e.target.files || []);
-    setFiles(prev => [...prev, ...newFiles]);
-  };
-
-export default function EditListing() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [listing, setListing] = useState<Design | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [previewImage, setPreviewImage] = useState<File | null>(null);
-  const [files, setFiles] = useState<File[]>([]);
-
   useEffect(() => {
-    if (!user || !id) return;
+    if (!id) return;
 
     fetchListing();
-  }, [user, id]);
+  }, [id]);
+
+
 
   const fetchListing = async () => {
     try {
@@ -49,14 +31,14 @@ export default function EditListing() {
 
       if (error) throw error;
       if (!data) {
-        toast.error('Listing not found');
+        toast.error('Design not found');
         navigate('/dashboard/seller');
         return;
       }
       setListing(data);
     } catch (error) {
-      console.error('Error fetching listing:', error);
-      toast.error('Failed to load listing');
+      console.error('Error fetching design:', error);
+      toast.error('Failed to load design');
       navigate('/dashboard/seller');
     } finally {
       setLoading(false);
@@ -127,7 +109,7 @@ export default function EditListing() {
       // Delete files from storage
       const { error: storageError } = await supabase.storage
         .from('designs')
-        .remove([`previews/${listing.id}`, ...listing.files.map(file => `files/${listing.id}/${file}`)]);
+        .remove([`previews/${listing.id}`]);
 
       if (storageError) throw storageError;
 
@@ -206,7 +188,7 @@ export default function EditListing() {
         <div>
           <label className="block text-sm font-medium text-gray-700">Description</label>
           <textarea
-            value={listing.description}
+            value={listing.description || ''}
             onChange={(e) => setListing({ ...listing, description: e.target.value })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             rows={4}
@@ -223,8 +205,8 @@ export default function EditListing() {
             <input
               type="number"
               step="0.01"
-              value={listing.price}
-              onChange={(e) => setListing({ ...listing, price: parseFloat(e.target.value) })}
+              value={listing.price || ''}
+              onChange={(e) => setListing({ ...listing, price: e.target.value ? parseFloat(e.target.value) : 0 })}
               className="flex-1 block w-full rounded-none rounded-r-md min-w-0 border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               required
             />
@@ -253,8 +235,8 @@ export default function EditListing() {
           <label className="block text-sm font-medium text-gray-700">Tags</label>
           <input
             type="text"
-            value={listing.tags ? listing.tags.join(', ') : ''}
-            onChange={(e) => setListing({ ...listing, tags: e.target.value.split(',').map(tag => tag.trim()) })}
+            value={listing.tags?.join(', ') || ''}
+            onChange={(e) => setListing({ ...listing, tags: e.target.value ? e.target.value.split(',').map(tag => tag.trim()) : undefined })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             placeholder="Enter tags separated by commas"
           />
@@ -339,20 +321,7 @@ export default function EditListing() {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Status</label>
-          <select
-            value={listing.status}
-            onChange={(e) => setListing({ ...listing, status: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            required
-          >
-            <option value="draft">Draft</option>
-            <option value="pending">Pending Review</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
+
 
         <div>
           <button
