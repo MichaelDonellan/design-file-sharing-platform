@@ -32,7 +32,7 @@ function App() {
       <div>
         <BrowserRouter>
           <div className="min-h-screen bg-gray-50">
-            <Navbar isAdmin={false} />
+            <Navbar />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <Routes>
@@ -64,7 +64,7 @@ function App() {
                   path="/dashboard/profile"
                   element={
                     <PrivateRoute>
-                      <Navbar isAdmin={false} />
+                      <Navbar />
                       <Profile />
                     </PrivateRoute>
                   }
@@ -73,7 +73,7 @@ function App() {
                   path="/dashboard/store"
                   element={
                     <PrivateRoute>
-                      <Navbar isAdmin={false} />
+                      <Navbar />
                       <Store />
                     </PrivateRoute>
                   }
@@ -82,7 +82,7 @@ function App() {
                   path="/dashboard/settings"
                   element={
                     <PrivateRoute>
-                      <Navbar isAdmin={false} />
+                      <Navbar />
                       <Settings />
                     </PrivateRoute>
                   }
@@ -91,7 +91,7 @@ function App() {
                   path="/dashboard/seller"
                   element={
                     <PrivateRoute>
-                      <Navbar isAdmin={false} />
+                      <Navbar />
                       <SellerDashboard />
                     </PrivateRoute>
                   }
@@ -100,6 +100,7 @@ function App() {
                   path="/dashboard/edit/:id"
                   element={
                     <PrivateRoute>
+                      <Navbar />
                       <EditListing />
                     </PrivateRoute>
                   }
@@ -111,7 +112,7 @@ function App() {
                   path="/admin"
                   element={
                     <PrivateRoute>
-                      <Navbar isAdmin={true} />
+                      <Navbar />
                       <AdminDashboard />
                     </PrivateRoute>
                   }

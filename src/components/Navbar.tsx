@@ -9,12 +9,8 @@ import { supabase } from '../lib/supabase';
 import LoginPanel from './LoginPanel';
 import RegisterPanel from './RegisterPanel';
 
-interface NavbarProps {
-  isAdmin: boolean;
-}
-
-export default function Navbar({ isAdmin }: NavbarProps) {
-  const { user, signOut } = useAuth();
+export default function Navbar() {
+  const { user, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasStore, setHasStore] = useState(false);
@@ -91,15 +87,6 @@ export default function Navbar({ isAdmin }: NavbarProps) {
             </Link>
             {user ? (
               <>
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    <ShoppingBag size={20} />
-                    <span className="ml-2">Admin</span>
-                  </Link>
-                )}
                 <Link
                   to="/upload"
                   className="text-gray-600 hover:text-gray-900"
@@ -196,6 +183,16 @@ export default function Navbar({ isAdmin }: NavbarProps) {
                     <Settings size={20} />
                     <span>Settings</span>
                   </Link>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <ShoppingBag size={20} />
+                      <span>Admin</span>
+                    </Link>
+                  )}
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
