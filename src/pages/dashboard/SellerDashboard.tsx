@@ -142,13 +142,13 @@ export default function SellerDashboard() {
   const handleDeleteListing = async (listingId: string) => {
     try {
       const { error } = await supabase
-        .from('listings')
+        .from('designs')
         .delete()
         .eq('id', listingId);
 
       if (error) throw error;
 
-      toast.success('Listing deleted successfully');
+      toast.success('Design deleted successfully');
       await fetchSellerData();
     } catch (error) {
       console.error('Error deleting listing:', error);
