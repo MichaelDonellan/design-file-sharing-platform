@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { toast } from 'react-toastify';
 import { Heart, DollarSign, ShoppingBag, Eye, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Design as Listing, Store } from '../../types';
+import { Design as Listing } from '../../types';
 
 
 
@@ -37,6 +37,11 @@ export default function SellerDashboard() {
 
       if (error) {
         console.error('Error checking store status:', error);
+        setHasStore(false);
+        return;
+      }
+
+      if (!data) {
         setHasStore(false);
         return;
       }
@@ -237,7 +242,7 @@ export default function SellerDashboard() {
                     <div className="text-sm text-gray-900">${(listing.price || 0).toFixed(2)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">${(listing.price || 0) * (listing.downloads || 0).toFixed(2)}</div>
+                    <div className="text-sm text-gray-900">${((listing.price || 0) * (listing.downloads || 0)).toFixed(2)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
