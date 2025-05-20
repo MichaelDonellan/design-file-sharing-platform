@@ -226,7 +226,8 @@ export default function DesignDetail() {
   const handleDownload = async () => {
     if (!design) return;
 
-    if (design.price && !user) {
+    // Always require login before download/purchase
+    if (!user) {
       navigate('/login');
       return;
     }

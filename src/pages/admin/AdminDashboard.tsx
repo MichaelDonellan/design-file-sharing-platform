@@ -223,10 +223,12 @@ export default function AdminDashboard() {
         toast.error('Failed to add agrinolan as admin');
       }
     })();
+  }, []);
 
+  useEffect(() => {
     fetchAdminEmails();
     fetchPendingUploads();
-  }, [fetchAdminEmails, fetchPendingUploads]);
+  }, []); // Empty dependency array means this will only run once on mount
 
   if (!isAdmin) {
     return <div className="text-center py-8">You must be an admin to access this page</div>;
