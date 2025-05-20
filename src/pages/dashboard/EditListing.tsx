@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Design } from '../../types';
+import { supabase } from '../../lib/supabase';
 
 export default function EditListing() {
   const { id } = useParams();
@@ -26,10 +25,9 @@ export default function EditListing() {
   };
 
 export default function EditListing() {
-  const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
-  const [listing, setListing] = useState<Listing | null>(null);
+  const [listing, setListing] = useState<Design | null>(null);
   const [loading, setLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -179,17 +177,14 @@ export default function EditListing() {
           <label className="block text-sm font-medium text-gray-700">File Type</label>
           <select
             value={listing.file_type}
-            onChange={(e) => setListing({ ...listing, file_type: e.target.value })}
+            onChange={(e) => setListing({ ...listing, file_type: e.target.value as 'image' | 'font' | 'template' })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             required
           >
             <option value="">Select file type</option>
-            <option value="psd">PSD</option>
-            <option value="ai">AI</option>
-            <option value="sketch">Sketch</option>
-            <option value="xd">XD</option>
-            <option value="figma">Figma</option>
-            <option value="other">Other</option>
+            <option value="image">Image</option>
+            <option value="font">Font</option>
+            <option value="template">Template</option>
           </select>
         </div>
 
@@ -240,15 +235,17 @@ export default function EditListing() {
           <label className="block text-sm font-medium text-gray-700">Category</label>
           <select
             value={listing.category}
-            onChange={(e) => setListing({ ...listing, category: e.target.value })}
+            onChange={(e) => setListing({ ...listing, category: e.target.value as 'Fonts' | 'Logos' | 'Templates' | 'Icons' | 'UI Kits' | 'Freebies' })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             required
           >
             <option value="">Select category</option>
-            <option value="templates">Templates</option>
-            <option value="icons">Icons</option>
-            <option value="illustrations">Illustrations</option>
-            <option value="ui-kits">UI Kits</option>
+            <option value="Fonts">Fonts</option>
+            <option value="Logos">Logos</option>
+            <option value="Templates">Templates</option>
+            <option value="Icons">Icons</option>
+            <option value="UI Kits">UI Kits</option>
+            <option value="Freebies">Freebies</option>
           </select>
         </div>
 
@@ -256,7 +253,7 @@ export default function EditListing() {
           <label className="block text-sm font-medium text-gray-700">Tags</label>
           <input
             type="text"
-            value={listing.tags.join(', ')}
+            value={listing.tags ? listing.tags.join(', ') : ''}
             onChange={(e) => setListing({ ...listing, tags: e.target.value.split(',').map(tag => tag.trim()) })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             placeholder="Enter tags separated by commas"
@@ -289,7 +286,12 @@ export default function EditListing() {
                     name="preview-image"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setPreviewImage(e.target.files?.[0] || null)}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setPreviewImage(file);
+                      }
+                    }}
                     className="sr-only"
                   />
                 </label>
