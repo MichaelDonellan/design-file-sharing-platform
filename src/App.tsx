@@ -88,6 +88,14 @@ function App() {
                     </PrivateRoute>
                   }
                 />
+                <Route
+                  path="/dashboard/seller"
+                  element={
+                    <PrivateRoute>
+                      <SellerDashboard />
+                    </PrivateRoute>
+                  }
+                />
                 <Route path="/payment/success" element={<PaymentSuccess />} />
                 <Route path="/plus-library" element={<PlusLibrary />} />
               </Routes>
