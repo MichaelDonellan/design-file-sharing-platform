@@ -16,6 +16,7 @@ import { AuthProvider } from './context/AuthContext';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PlusLibrary from './pages/PlusLibrary';
 import Categories from './pages/Categories';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 function App() {
   return (
@@ -66,6 +67,14 @@ function App() {
               />
               <Route path="/payment/success" element={<PaymentSuccess />} />
               <Route path="/plus-library" element={<PlusLibrary />} />
+              <Route
+                path="/admin"
+                element={
+                  <PrivateRoute>
+                    <AdminDashboard />
+                  </PrivateRoute>
+                }
+              />
             </Routes>
           </main>
         </div>

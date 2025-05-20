@@ -11,6 +11,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
+const ADMIN_EMAILS = ['agrinolan@gmail.com', 'tammylouise407@gmail.com'];
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -36,10 +38,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser({
             id: session.user.id,
             email: session.user.email!,
-            role: roleData || 'user'
+            role: session.user.email?.toLowerCase() in ADMIN_EMAILS ? 'admin' : 'user'
           });
 
-          setIsAdmin(roleData === 'admin');
+          setIsAdmin(ADMIN_EMAILS.includes(session.user.email?.toLowerCase() || ''));
         }
         setLoading(false);
 
@@ -55,10 +57,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser({
               id: session.user.id,
               email: session.user.email!,
-              role: roleData || 'user'
+              role: session.user.email?.toLowerCase() in ADMIN_EMAILS ? 'admin' : 'user'
             });
 
-            setIsAdmin(roleData === 'admin');
+            setIsAdmin(ADMIN_EMAILS.includes(session.user.email?.toLowerCase() || ''));
           } else {
             setUser(null);
             setIsAdmin(false);
