@@ -151,8 +151,8 @@ export default function SellerDashboard() {
       toast.success('Design deleted successfully');
       await fetchSellerData();
     } catch (error) {
-      console.error('Error deleting listing:', error);
-      toast.error('Failed to delete listing');
+      console.error('Error deleting design:', error);
+      toast.error('Failed to delete design');
     }
   };
 
