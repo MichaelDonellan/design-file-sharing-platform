@@ -94,14 +94,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // First check if we have a session
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
+        // If no session, clear user state and return
         setUser(null);
         setIsAdmin(false);
+        setLoading(false);
         return;
       }
 
       // If we have a session, proceed with sign out
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        // If sign out fails, still clear user state
+        console.error('Sign out error:', error);
+        setUser(null);
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+
+      // If successful, clear user state
       setUser(null);
       setIsAdmin(false);
     } catch (error) {
