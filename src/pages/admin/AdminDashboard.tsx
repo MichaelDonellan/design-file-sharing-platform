@@ -16,22 +16,29 @@ export default function AdminDashboard() {
   const [newAdminEmail, setNewAdminEmail] = useState('');
 
   useEffect(() => {
-    const fetchAdminEmails = async () => {
+    const testConnection = async () => {
       try {
+        console.log('Testing database connection...');
         const { data, error } = await supabase
           .from('admin_emails')
           .select('*')
-          .order('created_at', { ascending: false });
+          .limit(1);
 
-        if (error) throw error;
-        setAdminEmails(data || []);
+        console.log('Test connection result:', { error, data });
+        
+        if (error) {
+          console.error('Database connection error:', error);
+          toast.error('Database connection failed. Please check the table exists.');
+        } else {
+          console.log('Database connection successful!');
+        }
       } catch (error) {
-        console.error('Error fetching admin emails:', error);
-        toast.error('Failed to load admin emails');
+        console.error('Error testing connection:', error);
+        toast.error('Failed to connect to database');
       }
     };
 
-    fetchAdminEmails();
+    testConnection();
   }, []);
 
   const handleAddAdmin = async () => {
@@ -41,26 +48,40 @@ export default function AdminDashboard() {
     }
 
     try {
-      const { error } = await supabase
+      console.log('Attempting to add admin:', { email: newAdminEmail.toLowerCase() });
+      const { error, data } = await supabase
         .from('admin_emails')
         .insert({
           email: newAdminEmail.toLowerCase(),
           created_at: new Date().toISOString()
         });
 
-      if (error) throw error;
+      console.log('Database response:', { error, data });
+      
+      if (error) {
+        console.error('Error:', error);
+        toast.error(error.message || 'Failed to add admin email');
+        return;
+      }
 
       toast.success('Admin email added successfully');
       setNewAdminEmail('');
       
       // Refresh admin emails
-      const { data, error: refreshError } = await supabase
+      const { data: refreshData, error: refreshError } = await supabase
         .from('admin_emails')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (refreshError) throw refreshError;
-      setAdminEmails(data || []);
+      console.log('Refresh response:', { refreshError, refreshData });
+      
+      if (refreshError) {
+        console.error('Refresh error:', refreshError);
+        toast.error('Failed to refresh admin emails');
+        return;
+      }
+
+      setAdminEmails(refreshData || []);
     } catch (error) {
       console.error('Error adding admin email:', error);
       toast.error('Failed to add admin email');
