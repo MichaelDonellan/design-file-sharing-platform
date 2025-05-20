@@ -294,7 +294,7 @@ export default function EditListing() {
         const { data: files, error: filesError } = await supabase
           .from('design_files')
           .select('*')
-          .eq('design_id', listing.id);
+          .eq('design_id', listing?.id);
 
         if (filesError) {
           console.error('Error fetching existing files:', filesError);
@@ -307,7 +307,7 @@ export default function EditListing() {
         const { data: mockups, error: mockupsError } = await supabase
           .from('design_mockups')
           .select('*')
-          .eq('design_id', listing.id);
+          .eq('design_id', listing?.id);
 
         if (mockupsError) {
           console.error('Error fetching existing mockups:', mockupsError);
@@ -320,8 +320,10 @@ export default function EditListing() {
       }
     };
 
-    fetchExistingFiles();
-  }, [listing.id]);
+    if (listing?.id) {
+      fetchExistingFiles();
+    }
+  }, [listing?.id]);
 
   return (
     <div className="p-6">
