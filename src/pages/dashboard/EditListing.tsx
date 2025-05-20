@@ -106,20 +106,20 @@ export default function EditListing() {
     try {
       setLoading(true);
 
-      // Delete files from storage
-      const { error: storageError } = await supabase.storage
-        .from('designs')
-        .remove([`previews/${listing.id}`]);
-
-      if (storageError) throw storageError;
-
-      // Delete design from database
+      // Delete the design
       const { error: deleteError } = await supabase
         .from('designs')
         .delete()
         .eq('id', listing.id);
 
       if (deleteError) throw deleteError;
+
+      // Delete associated files from storage
+      const { error: storageError } = await supabase.storage
+        .from('designs')
+        .remove([`previews/${listing.id}`]);
+
+      if (storageError) throw storageError;
 
       toast.success('Design deleted successfully');
       navigate('/dashboard/seller');
