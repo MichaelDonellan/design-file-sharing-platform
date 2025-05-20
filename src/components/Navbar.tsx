@@ -108,6 +108,15 @@ export default function Navbar() {
                   <Settings size={20} />
                   <span className="ml-2">Settings</span>
                 </Link>
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <ShoppingBag size={20} />
+                    <span className="ml-2">Admin</span>
+                  </Link>
+                )}
                 <button
                   onClick={() => signOut()}
                   className="text-gray-600 hover:text-gray-900"

@@ -45,14 +45,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const { data, error } = await supabase
+      const { data: admin, error: adminError } = await supabase
         .from('admin_emails')
         .select('email')
         .eq('email', email)
         .single();
 
-      if (error) throw error;
-      setIsAdmin(!!data);
+      if (adminError && adminError.code === 'PGRST116') {
+        // No admin found
+        setIsAdmin(false);
+        return;
+      }
+
+      if (adminError) throw adminError;
+      setIsAdmin(true);
     } catch (error) {
       console.error('Error checking admin status:', error);
       setIsAdmin(false);
@@ -84,8 +90,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null);
       setLoading(true);
-      const { error } = await supabase.auth.signOut();
+      
+      // First check if we have a session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setUser(null);
+        setIsAdmin(false);
+        return;
+      }
 
+      // If we have a session, proceed with sign out
+      const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setUser(null);
       setIsAdmin(false);
