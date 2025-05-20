@@ -224,7 +224,7 @@ export default function DesignDetail() {
   };
 
   const handleDownload = async () => {
-    if (!design) return;
+    if (!design || !files.length) return;
 
     // Always require login before download/purchase
     if (!user) {
@@ -241,9 +241,15 @@ export default function DesignDetail() {
 
     // For free designs, proceed with download
     try {
+      // Get the first file from the files array
+      const mainFile = files[0];
+      if (!mainFile?.file_path) {
+        throw new Error('No file path available');
+      }
+
       const { data, error } = await supabase.storage
         .from('designs')
-        .download(design.file_path);
+        .download(mainFile.file_path);
 
       if (error) throw error;
 
