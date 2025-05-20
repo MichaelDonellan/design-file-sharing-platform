@@ -42,7 +42,7 @@ export default function AdminDashboard() {
       const { data: designs, error: designError } = await supabase
         .from('designs')
         .select('*')
-        .eq('store_id', null)
+        .is('store_id', null)
         .order('created_at', { ascending: false });
 
       if (designError) throw designError;
