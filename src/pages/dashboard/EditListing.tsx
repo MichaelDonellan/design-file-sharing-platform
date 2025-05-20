@@ -20,6 +20,47 @@ export default function EditListing() {
     fetchListing();
   }, [id]);
 
+  // Fetch existing files and mockups
+  useEffect(() => {
+    const fetchExistingFiles = async () => {
+      try {
+        if (!listing?.id) return;
+
+        // Fetch existing files
+        const { data: files, error: filesError } = await supabase
+          .from('design_files')
+          .select('*')
+          .eq('design_id', listing.id);
+
+        if (filesError) {
+          console.error('Error fetching existing files:', filesError);
+          return;
+        }
+
+        setExistingFiles(files || []);
+
+        // Fetch existing mockups
+        const { data: mockups, error: mockupsError } = await supabase
+          .from('design_mockups')
+          .select('*')
+          .eq('design_id', listing.id);
+
+        if (mockupsError) {
+          console.error('Error fetching existing mockups:', mockupsError);
+          return;
+        }
+
+        setExistingMockups(mockups || []);
+      } catch (error) {
+        console.error('Error fetching existing files and mockups:', error);
+      }
+    };
+
+    if (listing?.id) {
+      fetchExistingFiles();
+    }
+  }, [listing]);
+
 
 
   const fetchListing = async () => {
@@ -286,44 +327,7 @@ export default function EditListing() {
     );
   }
 
-  // Fetch existing files and mockups
-  useEffect(() => {
-    const fetchExistingFiles = async () => {
-      try {
-        // Fetch existing files
-        const { data: files, error: filesError } = await supabase
-          .from('design_files')
-          .select('*')
-          .eq('design_id', listing?.id);
 
-        if (filesError) {
-          console.error('Error fetching existing files:', filesError);
-          return;
-        }
-
-        setExistingFiles(files || []);
-
-        // Fetch existing mockups
-        const { data: mockups, error: mockupsError } = await supabase
-          .from('design_mockups')
-          .select('*')
-          .eq('design_id', listing?.id);
-
-        if (mockupsError) {
-          console.error('Error fetching existing mockups:', mockupsError);
-          return;
-        }
-
-        setExistingMockups(mockups || []);
-      } catch (error) {
-        console.error('Error fetching existing files and mockups:', error);
-      }
-    };
-
-    if (listing?.id) {
-      fetchExistingFiles();
-    }
-  }, [listing?.id]);
 
   return (
     <div className="p-6">
