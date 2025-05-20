@@ -29,9 +29,7 @@ export default function Navbar() {
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
-            <Link to="/" className="text-xl font-bold text-gray-800 ml-2">
-              DesignShare
-            </Link>
+
           </div>
           
           {/* Mobile Profile Icon */}
@@ -47,13 +45,15 @@ export default function Navbar() {
           )}
           
           <div className="hidden lg:flex items-center space-x-4">
-            <Link
-              to="/categories"
-              className="flex items-center space-x-1 text-gray-600 hover:text-gray-900"
-            >
-              <Tag size={20} />
-              <span>Categories</span>
-            </Link>
+            <div className="relative">
+              <select
+                className="bg-white border border-gray-300 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </div>
             {user ? (
               <>
                 <Link
@@ -67,20 +67,13 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link
-                  to="/login"
+                <button
                   className="flex items-center space-x-1 text-gray-600 hover:text-gray-900"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 >
                   <LogIn size={20} />
                   <span>Login</span>
-                </Link>
-                <Link
-                  to="/register"
-                  className="flex items-center space-x-1 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-                >
-                  <PlusSquare size={20} />
-                  <span>Register</span>
-                </Link>
+                </button>
               </>
             )}
           </div>

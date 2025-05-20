@@ -35,25 +35,14 @@ function App() {
         <BrowserRouter>
           <div className="min-h-screen bg-gray-50">
             <Navbar />
-            <nav className="bg-white shadow-sm">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16">
-                  <div className="flex">
-                    <div className="flex-shrink-0 flex items-center">
-                      <h1 className="text-xl font-bold text-gray-900">Design File Sharing Platform</h1>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => setIsRegisterOpen(true)}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                    >
-                      Register
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </nav>
+            <div className="fixed bottom-4 right-4 z-50">
+              <button
+                onClick={() => setIsRegisterOpen(true)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 shadow-lg"
+              >
+                Register
+              </button>
+            </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <Routes>
