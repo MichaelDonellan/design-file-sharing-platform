@@ -1,20 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Upload, LogIn, PlusSquare, Menu, X, User, Store, Settings, LogOut, Tag, ShoppingBag } from 'lucide-react';
 import UserMenu from './UserMenu';
 import { CATEGORIES } from '../types';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import LoginPanel from './LoginPanel';
 import RegisterPanel from './RegisterPanel';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [hasStore, setHasStore] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    checkStoreStatus();
+  }, [user]);
+
+  const checkStoreStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+      setHasStore(true);
+    } catch (error) {
+      console.error('Error checking store status:', error);
+      setHasStore(false);
+    }
+  };
+
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const navigate = useNavigate();
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev =>
@@ -132,14 +157,16 @@ export default function Navbar() {
                     <User size={20} />
                     <span>Profile</span>
                   </Link>
-                  <Link
-                    to="/dashboard/seller"
-                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <ShoppingBag size={20} />
-                    <span>Seller Dashboard</span>
-                  </Link>
+                  {hasStore && (
+                    <Link
+                      to="/dashboard/seller"
+                      className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <ShoppingBag size={20} />
+                      <span>Seller Dashboard</span>
+                    </Link>
+                  )}
                   <Link
                     to="/dashboard/store"
                     className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"

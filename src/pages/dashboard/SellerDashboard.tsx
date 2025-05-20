@@ -2,51 +2,91 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-toastify';
-import { File, Heart, DollarSign, ShoppingBag } from 'lucide-react';
+import { Heart, DollarSign, ShoppingBag, Eye, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Listing {
   id: string;
   title: string;
+  description: string;
   price: number;
   category: string;
+  tags: string[];
+  preview_image: string;
+  files: string[];
+  status: string;
   favorites: number;
   sales: number;
-  revenue: number;
+  views: number;
+}
+
+interface Store {
+  id: string;
+  name: string;
+  description: string;
   status: string;
 }
 
 export default function SellerDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [listings, setListings] = useState<Listing[]>([]);
   const [favorites, setFavorites] = useState<number>(0);
   const [totalRevenue, setTotalRevenue] = useState<number>(0);
+  const [totalViews, setTotalViews] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [hasStore, setHasStore] = useState(false);
 
   useEffect(() => {
     if (!user) return;
 
-    fetchSellerData();
+    checkStoreStatus();
   }, [user]);
+
+  const checkStoreStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+      setHasStore(true);
+    } catch (error) {
+      console.error('Error checking store status:', error);
+      setHasStore(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user || !hasStore) return;
+
+    fetchSellerData();
+  }, [user, hasStore]);
 
   const fetchSellerData = async () => {
     try {
       setLoading(true);
 
-      // Fetch listings
+      // Fetch listings with view counts
       const { data: listingsData, error: listingsError } = await supabase
         .from('listings')
         .select('*')
-        .eq('seller_id', user.id);
+        .eq('seller_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (listingsError) throw listingsError;
 
-      // Calculate favorites and revenue
+      // Calculate totals
       const totalFavorites = listingsData.reduce((sum, listing) => sum + listing.favorites, 0);
       const totalRevenue = listingsData.reduce((sum, listing) => sum + listing.price * listing.sales, 0);
+      const totalViews = listingsData.reduce((sum, listing) => sum + listing.views, 0);
 
       setListings(listingsData);
       setFavorites(totalFavorites);
       setTotalRevenue(totalRevenue);
+      setTotalViews(totalViews);
     } catch (error) {
       console.error('Error fetching seller data:', error);
       toast.error('Failed to load seller data');
@@ -90,7 +130,17 @@ export default function SellerDashboard() {
       <h1 className="text-2xl font-bold mb-8">Seller Dashboard</h1>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded-lg p-6 shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <Eye className="text-blue-500 w-6 h-6" />
+              <h3 className="text-sm font-medium text-gray-500">Total Views</h3>
+              <p className="text-2xl font-bold text-gray-900">{totalViews.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white rounded-lg p-6 shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -125,7 +175,16 @@ export default function SellerDashboard() {
       {/* Listings Table */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b">
-          <h2 className="text-lg font-medium text-gray-900">Your Listings</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium text-gray-900">Your Listings</h2>
+            <button
+              onClick={() => navigate('/dashboard/store')}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="-ml-1 mr-2 h-5 w-5" />
+              Add New Listing
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full">
@@ -138,7 +197,7 @@ export default function SellerDashboard() {
                   Category
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Price
+                  Views
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Favorites
@@ -167,7 +226,7 @@ export default function SellerDashboard() {
                     <div className="text-sm text-gray-500">{listing.category}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">${listing.price.toFixed(2)}</div>
+                    <div className="text-sm text-gray-900">{listing.views.toLocaleString()}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{listing.favorites}</div>
