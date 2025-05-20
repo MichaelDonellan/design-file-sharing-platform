@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import DesignDetail from './pages/DesignDetail';
@@ -17,8 +17,6 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import PlusLibrary from './pages/PlusLibrary';
 import Categories from './pages/Categories';
 import AdminDashboard from './pages/admin/AdminDashboard';
-
-import RegisterPanel from './components/RegisterPanel';
 import { ToastContainer } from 'react-toastify';
 import Files from './pages/Files';
 import FileDetails from './pages/FileDetails';
@@ -27,14 +25,13 @@ import RejectFile from './pages/RejectFile';
 import ApproveFile from './pages/ApproveFile';
 
 function App() {
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-
   return (
     <AuthProvider>
       <div>
         <BrowserRouter>
           <div className="min-h-screen bg-gray-50">
             <Navbar />
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <Routes>
                 <Route path="/" element={<Home />} />
@@ -96,7 +93,6 @@ function App() {
           </div>
         </BrowserRouter>
         <ToastContainer position={"top-right"} />
-        <RegisterPanel isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} />
       </div>
     </AuthProvider>
   );

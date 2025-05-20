@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, LogIn } from 'lucide-react';
+import { Upload, LogIn, PlusSquare, Menu, X, User, Store, Settings, LogOut, Tag } from 'lucide-react';
+import UserMenu from './UserMenu';
+import { CATEGORIES } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 export default function Navbar() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
 
   return (
     <nav className="bg-white shadow-lg">
@@ -22,32 +36,72 @@ export default function Navbar() {
               DesignShare
             </Link>
           </div>
-
+          
+          {/* Mobile Profile Icon */}
+          {user && (
+            <div className="lg:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 rounded-full bg-blue-500 text-white"
+              >
+                <User size={20} />
+              </button>
+            </div>
+          )}
+          
           <div className="hidden lg:flex items-center space-x-4">
+            <Link
+              to="/categories"
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <Tag size={20} />
+              <span className="ml-2">Categories</span>
+            </Link>
             {user ? (
               <>
                 <Link
-                  to="/dashboard/profile"
-                  className="flex items-center space-x-1 text-gray-600 hover:text-gray-900"
+                  to="/upload"
+                  className="text-gray-600 hover:text-gray-900"
                 >
-                  <User size={20} />
-                  <span>Profile</span>
+                  <Upload size={20} />
+                  <span className="ml-2">Upload</span>
                 </Link>
+                <Link
+                  to="/store"
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <Store size={20} />
+                  <span className="ml-2">Store</span>
+                </Link>
+                <Link
+                  to="/settings"
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <Settings size={20} />
+                  <span className="ml-2">Settings</span>
+                </Link>
+                <button
+                  onClick={() => signOut()}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <LogOut size={20} />
+                  <span className="ml-2">Logout</span>
+                </button>
               </>
             ) : (
               <>
+                <button
+                  onClick={() => setIsRegisterOpen(true)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  Register
+                </button>
                 <Link
                   to="/login"
                   className="flex items-center space-x-1 text-gray-600 hover:text-gray-900"
                 >
                   <LogIn size={20} />
                   <span>Login</span>
-                </Link>
-                <Link
-                  to="/register"
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  Register
                 </Link>
               </>
             )}
@@ -59,14 +113,106 @@ export default function Navbar() {
           <div className="px-2 pt-2 pb-3 space-y-1">
             {user ? (
               <>
-                <Link
-                  to="/dashboard/profile"
-                  className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <User size={20} />
-                  <span>Profile</span>
-                </Link>
+                {/* Profile Section */}
+                <div className="border-b border-gray-200 pb-2 mb-2">
+                  <div className="px-3 py-2 text-sm font-medium text-gray-500">
+                    My Account
+                  </div>
+                  <Link
+                    to="/dashboard/profile"
+                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <User size={20} />
+                    <span>Profile</span>
+                  </Link>
+                  <Link
+                    to="/dashboard/store"
+                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Store size={20} />
+                    <span>Store</span>
+                  </Link>
+                  <Link
+                    to="/dashboard/settings"
+                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Settings size={20} />
+                    <span>Settings</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      signOut();
+                    }}
+                    className="flex items-center space-x-2 w-full text-left px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                  >
+                    <LogOut size={20} />
+                    <span>Logout</span>
+                  </button>
+                </div>
+
+                {/* Main Navigation */}
+                <div className="border-b border-gray-200 pb-2 mb-2">
+                  <Link
+                    to="/upload"
+                    className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Upload size={20} />
+                    <span>Upload</span>
+                  </Link>
+                  <Link
+                    to="/categories"
+                    className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Tag size={20} />
+                    <span>Categories</span>
+                  </Link>
+                </div>
+
+                {/* Categories Section */}
+                <div>
+                  <div className="px-3 py-2 text-sm font-medium text-gray-500">
+                    Browse Categories
+                  </div>
+                  {Object.entries(CATEGORIES).map(([category, subcategories]) => (
+                    <div key={category} className="space-y-1">
+                      <button
+                        onClick={() => toggleCategory(category)}
+                        className="w-full flex items-center justify-between px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <Tag size={20} />
+                          <span>{category}</span>
+                        </div>
+                        {expandedCategories.includes(category) ? (
+                          <X size={16} />
+                        ) : (
+                          <Menu size={16} />
+                        )}
+                      </button>
+                      
+                      {expandedCategories.includes(category) && (
+                        <div className="ml-4 space-y-1">
+                          {subcategories.map(sub => (
+                            <Link
+                              key={sub}
+                              to={`/?category=${category}&subcategory=${sub}`}
+                              className="block px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              {sub}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </>
             ) : (
               <>
