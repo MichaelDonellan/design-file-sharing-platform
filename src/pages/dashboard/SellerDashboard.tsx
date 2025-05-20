@@ -84,12 +84,41 @@ export default function SellerDashboard() {
         return;
       }
 
-      // Calculate totals
-      const totalFavorites = listingsData.reduce((sum, listing) => sum + (listing.average_rating || 0), 0);
-      const totalRevenue = listingsData.reduce((sum, listing) => sum + (listing.price || 0), 0);
-      const totalViews = listingsData.reduce((sum, listing) => sum + (listing.downloads || 0), 0);
+      // Fetch total revenue for each listing
+      const listingIds = listingsData.map(listing => listing.id);
+      const { data: purchaseData, error: purchaseError } = await supabase
+        .from('purchases')
+        .select('design_id, price')
+        .in('design_id', listingIds)
+        .eq('status', 'completed');
 
-      setListings(listingsData);
+      if (purchaseError) {
+        console.error('Error fetching purchase data:', purchaseError);
+        toast.error('Failed to fetch purchase data');
+        return;
+      }
+
+      // Calculate total revenue for each listing
+      const revenueByListing = purchaseData.reduce((acc, purchase) => {
+        if (!acc[purchase.design_id]) {
+          acc[purchase.design_id] = 0;
+        }
+        acc[purchase.design_id] += purchase.price || 0;
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Update listings with their total revenue
+      const listingsWithRevenue = listingsData.map(listing => ({
+        ...listing,
+        total_revenue: revenueByListing[listing.id] || 0
+      }));
+
+      // Calculate totals
+      const totalFavorites = listingsWithRevenue.reduce((sum, listing) => sum + (listing.average_rating || 0), 0);
+      const totalRevenue = listingsWithRevenue.reduce((sum, listing) => sum + (listing.total_revenue || 0), 0);
+      const totalViews = listingsWithRevenue.reduce((sum, listing) => sum + (listing.downloads || 0), 0);
+
+      setListings(listingsWithRevenue);
       setFavorites(totalFavorites);
       setTotalRevenue(totalRevenue);
       setTotalViews(totalViews);
