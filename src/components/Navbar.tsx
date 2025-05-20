@@ -5,12 +5,15 @@ import { Upload, LogIn, PlusSquare, Menu, X, User, Store, Settings, LogOut, Tag 
 import UserMenu from './UserMenu';
 import { CATEGORIES } from '../types';
 import { useNavigate } from 'react-router-dom';
+import LoginPanel from './LoginPanel';
+import RegisterPanel from './RegisterPanel';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const navigate = useNavigate();
 
   const toggleCategory = (category: string) => {
@@ -96,17 +99,20 @@ export default function Navbar() {
                 >
                   Register
                 </button>
-                <Link
-                  to="/login"
-                  className="flex items-center space-x-1 text-gray-600 hover:text-gray-900"
+                <button
+                  onClick={() => setIsLoginOpen(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
-                  <LogIn size={20} />
-                  <span>Login</span>
-                </Link>
+                  Login
+                </button>
               </>
             )}
           </div>
         </div>
+
+        {/* Login/Register Panels */}
+        <LoginPanel isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+        <RegisterPanel isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} />
 
         {/* Mobile menu */}
         <div className={`lg:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
@@ -216,20 +222,24 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link
-                  to="/login"
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsLoginOpen(true);
+                  }}
                   className="block px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
-                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Login
-                </Link>
-                <Link
-                  to="/register"
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsRegisterOpen(true);
+                  }}
                   className="block px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Register
-                </Link>
+                </button>
               </>
             )}
           </div>
