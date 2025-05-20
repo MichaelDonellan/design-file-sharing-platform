@@ -11,6 +11,8 @@ export default function EditListing() {
   const [loading, setLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState<File | null>(null);
   const [files, setFiles] = useState<File[]>([]);
+  const [existingFiles, setExistingFiles] = useState<any[]>([]);
+  const [existingMockups, setExistingMockups] = useState<any[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -42,6 +44,76 @@ export default function EditListing() {
       navigate('/dashboard/seller');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    if (!listing) {
+      toast.error('Design not found');
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('designs')
+        .remove([`files/${listing.id}/${fileId}`]);
+
+      if (storageError) throw storageError;
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('design_files')
+        .delete()
+        .eq('id', fileId);
+
+      if (dbError) throw dbError;
+
+      // Update local state
+      setExistingFiles(existingFiles.filter(file => file.id !== fileId));
+      toast.success('File deleted successfully');
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast.error('Failed to delete file');
+    }
+  };
+
+  const handleDeleteMockup = async (mockupId: string) => {
+    if (!listing) {
+      toast.error('Design not found');
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to delete this mockup? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('designs')
+        .remove([`mockups/${mockupId}`]);
+
+      if (storageError) throw storageError;
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('design_mockups')
+        .delete()
+        .eq('id', mockupId);
+
+      if (dbError) throw dbError;
+
+      // Update local state
+      setExistingMockups(existingMockups.filter(mockup => mockup.id !== mockupId));
+      toast.success('Mockup deleted successfully');
+    } catch (error) {
+      console.error('Error deleting mockup:', error);
+      toast.error('Failed to delete mockup');
     }
   };
 
@@ -214,6 +286,43 @@ export default function EditListing() {
     );
   }
 
+  // Fetch existing files and mockups
+  useEffect(() => {
+    const fetchExistingFiles = async () => {
+      try {
+        // Fetch existing files
+        const { data: files, error: filesError } = await supabase
+          .from('design_files')
+          .select('*')
+          .eq('design_id', listing.id);
+
+        if (filesError) {
+          console.error('Error fetching existing files:', filesError);
+          return;
+        }
+
+        setExistingFiles(files || []);
+
+        // Fetch existing mockups
+        const { data: mockups, error: mockupsError } = await supabase
+          .from('design_mockups')
+          .select('*')
+          .eq('design_id', listing.id);
+
+        if (mockupsError) {
+          console.error('Error fetching existing mockups:', mockupsError);
+          return;
+        }
+
+        setExistingMockups(mockups || []);
+      } catch (error) {
+        console.error('Error fetching existing files and mockups:', error);
+      }
+    };
+
+    fetchExistingFiles();
+  }, [listing.id]);
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-8">Edit Listing</h1>
@@ -360,7 +469,48 @@ export default function EditListing() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Files</label>
+          <label className="block text-sm font-medium text-gray-700">Existing Files</label>
+          <div className="mt-1 space-y-2">
+            {existingFiles.map((file, index) => (
+              <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                  <p className="text-xs text-gray-500">{file.path}</p>
+                </div>
+                <button
+                  onClick={() => handleDeleteFile(file.id)}
+                  className="text-red-600 hover:text-red-900"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Existing Mockups</label>
+          <div className="mt-1 grid grid-cols-2 md:grid-cols-3 gap-4">
+            {existingMockups.map((mockup, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={`https://storage.supabase.co/v1/object/public/designs/${mockup.path}`}
+                  alt={mockup.name}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+                <button
+                  onClick={() => handleDeleteMockup(mockup.id)}
+                  className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full hover:bg-red-600"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Add New Files</label>
           <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
             <div className="space-y-1 text-center">
               <svg
