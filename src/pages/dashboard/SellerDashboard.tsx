@@ -134,11 +134,6 @@ export default function SellerDashboard() {
     }
   };
 
-  const handleEditListing = (listingId: string) => {
-    // TODO: Implement edit listing functionality
-    toast.info('Edit listing feature coming soon');
-  };
-
   const handleDeleteListing = async (listingId: string) => {
     if (!listingId) {
       toast.error('Invalid design ID');
@@ -364,7 +359,7 @@ export default function SellerDashboard() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
-                      onClick={() => handleEditListing(listing.id)}
+                      onClick={() => navigate(`/dashboard/edit/${listing.id}`)}
                       className="text-blue-600 hover:text-blue-900 mr-2"
                     >
                       Edit
