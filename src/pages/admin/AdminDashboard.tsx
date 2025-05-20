@@ -50,32 +50,14 @@ export default function AdminDashboard() {
   const fetchAdminEmails = async () => {
     try {
       setLoading(true);
-      const { data: emails, error: emailsError } = await supabase
+      const { data: admins, error: error } = await supabase
         .from('admin_emails')
-        .select('*')
+        .select('*, users:email!inner (first_name, surname)')
         .order('created_at', { ascending: false });
 
-      if (emailsError) throw emailsError;
+      if (error) throw error;
 
-      // Fetch user data for each email
-      const emailsWithUserData = await Promise.all(
-        emails.map(async (email) => {
-          const { data: user, error: userError } = await supabase
-            .from('users')
-            .select('first_name, surname')
-            .eq('email', email.email)
-            .single();
-
-          if (userError) throw userError;
-
-          return {
-            ...email,
-            ...user
-          };
-        })
-      );
-
-      setAdminEmails(emailsWithUserData);
+      setAdminEmails(admins || []);
     } catch (error) {
       console.error('Error fetching admin emails:', error);
       toast.error('Failed to fetch admin emails');
