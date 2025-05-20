@@ -14,6 +14,7 @@ export default function AdminDashboard() {
   const { isAdmin, signOut } = useAuth();
   const [adminEmails, setAdminEmails] = useState<AdminEmail[]>([]);
   const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAdminEmails = async () => {
@@ -28,9 +29,10 @@ export default function AdminDashboard() {
       } catch (error) {
         console.error('Error fetching admin emails:', error);
         toast.error('Failed to load admin emails');
+      } finally {
+        setLoading(false);
       }
     };
-
     fetchAdminEmails();
   }, []);
 
@@ -41,6 +43,8 @@ export default function AdminDashboard() {
     }
 
     try {
+      setLoading(true);
+      
       const { error } = await supabase
         .from('admin_emails')
         .insert({
@@ -64,6 +68,8 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error adding admin email:', error);
       toast.error('Failed to add admin email');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -73,6 +79,8 @@ export default function AdminDashboard() {
     }
 
     try {
+      setLoading(true);
+      
       const { error } = await supabase
         .from('admin_emails')
         .delete()
@@ -93,6 +101,8 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error removing admin email:', error);
       toast.error('Failed to remove admin email');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -165,4 +175,3 @@ export default function AdminDashboard() {
       </div>
     </div>
   );
-}
