@@ -17,6 +17,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import PlusLibrary from './pages/PlusLibrary';
 import Categories from './pages/Categories';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import { ToastContainer } from 'react-toastify';
 
 function App() {
   return (
@@ -79,6 +80,7 @@ function App() {
           </main>
         </div>
       </BrowserRouter>
+      <ToastContainer position="top-right" />
     </AuthProvider>
   );
 }

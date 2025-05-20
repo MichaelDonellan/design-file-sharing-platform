@@ -1,77 +1,45 @@
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import {
-  UserCog,
-  UserPlus,
-  UserCheck,
-  UserMinus,
-  ListChecks,
-  Settings,
-  LogOut,
-} from 'lucide-react';
+import { toast } from 'react-toastify';
+import { UserMinus, LogOut } from 'lucide-react';
+
+interface AdminEmail {
+  id: number;
+  email: string;
+  created_at: string;
+}
 
 export default function AdminDashboard() {
   const { isAdmin, signOut } = useAuth();
-  const navigate = useNavigate();
-  const [pendingListings, setPendingListings] = useState([]);
+  const [adminEmails, setAdminEmails] = useState<AdminEmail[]>([]);
+  const [newAdminEmail, setNewAdminEmail] = useState('');
   const [loading, setLoading] = useState(true);
-  const [rejectModalOpen, setRejectModalOpen] = useState(null);
-  const [rejectionReason, setRejectionReason] = useState('');
 
   useEffect(() => {
-    const fetchPendingListings = async () => {
+    const fetchAdminEmails = async () => {
       try {
         const { data, error } = await supabase
-          .from('designs')
-          .select('*, stores(name), users(email)')
-          .eq('status', 'pending')
+          .from('admin_emails')
+          .select('*')
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setPendingListings(data || []);
+        setAdminEmails(data || []);
       } catch (error) {
-        console.error('Error fetching pending listings:', error);
-        toast.error('Failed to load pending listings');
+        console.error('Error fetching admin emails:', error);
+        toast.error('Failed to load admin emails');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPendingListings();
+    fetchAdminEmails();
   }, []);
 
-  // Mock data - replace with actual API calls
-  const pendingApprovals = [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com',
-      status: 'pending',
-      date: '2025-05-20',
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      status: 'pending',
-      date: '2025-05-19',
-    },
-  ];
 
-  const adminUsers = [
-    {
-      id: 1,
-      name: 'Admin User',
-      email: 'admin@example.com',
-      role: 'admin',
-      status: 'active',
-    },
-  ];
 
-  const handleApproval = (id: number, action: 'approve' | 'reject') => {
-    // Implement approval logic here
-    console.log(`Handling ${action} for user ${id}`);
-  };
+
 
   const handleAddAdmin = async () => {
     if (!newAdminEmail || !newAdminEmail.includes('@')) {
@@ -111,6 +79,10 @@ export default function AdminDashboard() {
   };
 
   const handleRemoveAdmin = async (id: number) => {
+    if (!window.confirm('Are you sure you want to remove this admin email?')) {
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -140,7 +112,7 @@ export default function AdminDashboard() {
   };
 
   if (!isAdmin) {
-    navigate('/');
+    window.location.href = '/';
     return null;
   }
 
@@ -194,97 +166,63 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
             <button
               onClick={signOut}
-              className="flex items-center space-x-2 text-red-600 hover:text-red-700"
+              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
             >
-              <LogOut size={20} />
-              <span>Sign Out</span>
+              <LogOut className="h-4 w-4 inline-block mr-2" />
+              Sign Out
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Pending Approvals */}
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Pending Approvals</h2>
-                <ListChecks className="h-6 w-6 text-blue-500" />
-              </div>
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Admin Management</h2>
               <div className="space-y-4">
-                {pendingApprovals.map((approval) => (
-                  <div
-                    key={approval.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium">{approval.name}</p>
-                      <p className="text-sm text-gray-500">{approval.email}</p>
-                      <p className="text-xs text-gray-400">{approval.date}</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleApproval(approval.id, 'approve')}
-                        className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600"
-                      >
-                        <UserCheck className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleApproval(approval.id, 'reject')}
-                        className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600"
-                      >
-                        <UserMinus className="h-4 w-4" />
-                      </button>
-                    </div>
+                <div className="flex flex-col">
+                  <div className="flex items-center mb-4">
+                    <input
+                      type="email"
+                      value={newAdminEmail}
+                      onChange={(e) => setNewAdminEmail(e.target.value)}
+                      placeholder="Enter admin email..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={handleAddAdmin}
+                      className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                    >
+                      Add Admin
+                    </button>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Admin Management */}
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Admin Management</h2>
-                <button
-                  onClick={() => navigate('/register')}
-                  className="flex items-center px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Admin
-                </button>
-              </div>
-              <div className="space-y-4">
-                {adminUsers.map((admin) => (
-                  <div
-                    key={admin.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium">{admin.name}</p>
-                      <p className="text-sm text-gray-500">{admin.email}</p>
-                      <p className="text-xs text-gray-400">{admin.role}</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleAdminAction(admin.id, 'demote')}
-                        className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
+                  <div className="overflow-y-auto max-h-[400px]">
+                    {adminEmails.map((emailObj) => (
+                      <div
+                        key={emailObj.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-2"
                       >
-                        <UserCog className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleAdminAction(admin.id, 'promote')}
-                        className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                      >
-                        <Settings className="h-4 w-4" />
-                      </button>
-                    </div>
+                        <div>
+                          <p className="font-medium">{emailObj.email}</p>
+                          <p className="text-xs text-gray-400">
+                            Added {new Date(emailObj.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveAdmin(emailObj.id)}
+                          className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600"
+                        >
+                          <UserMinus className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  );
-}
+  </div>
+);
