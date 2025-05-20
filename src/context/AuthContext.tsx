@@ -48,10 +48,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase
         .from('admin_emails')
         .select('email')
-        .eq('email', email);
+        .eq('email', email)
+        .single();
 
       if (error) throw error;
-      setIsAdmin(data && data.length > 0);
+      setIsAdmin(!!data);
     } catch (error) {
       console.error('Error checking admin status:', error);
       setIsAdmin(false);
