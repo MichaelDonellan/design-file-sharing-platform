@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Upload, LogIn, PlusSquare, Menu, X, User, Store, Settings, LogOut, Tag } from 'lucide-react';
+import { Upload, LogIn, PlusSquare, Menu, X, User, Store, Settings, LogOut, Tag, ShoppingBag } from 'lucide-react';
 import UserMenu from './UserMenu';
 import { CATEGORIES } from '../types';
 import { useNavigate } from 'react-router-dom';
@@ -131,6 +131,14 @@ export default function Navbar() {
                   >
                     <User size={20} />
                     <span>Profile</span>
+                  </Link>
+                  <Link
+                    to="/dashboard/seller"
+                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <ShoppingBag size={20} />
+                    <span>Seller Dashboard</span>
                   </Link>
                   <Link
                     to="/dashboard/store"

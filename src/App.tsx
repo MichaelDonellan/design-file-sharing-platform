@@ -10,6 +10,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import Profile from './pages/dashboard/Profile';
 import Store from './pages/dashboard/Store';
 import Settings from './pages/dashboard/Settings';
+import SellerDashboard from './pages/dashboard/SellerDashboard';
+import EditListing from './pages/dashboard/EditListing';
 import PublicStore from './pages/PublicStore';
 import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider } from './context/AuthContext';
