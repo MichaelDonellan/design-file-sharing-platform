@@ -88,7 +88,7 @@ export default function SellerDashboard() {
       const listingIds = listingsData.map(listing => listing.id);
       const { data: purchaseData, error: purchaseError } = await supabase
         .from('purchases')
-        .select('design_id, price')
+        .select('design_id, amount')
         .in('design_id', listingIds)
         .eq('status', 'completed');
 
@@ -103,7 +103,7 @@ export default function SellerDashboard() {
         if (!acc[purchase.design_id]) {
           acc[purchase.design_id] = 0;
         }
-        acc[purchase.design_id] += purchase.price || 0;
+        acc[purchase.design_id] += purchase.amount || 0;
         return acc;
       }, {} as Record<string, number>);
 
