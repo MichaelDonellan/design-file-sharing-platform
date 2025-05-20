@@ -1,120 +1,104 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import type { User } from '../types';
+import { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
-  loading: boolean;
-  isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  loading: boolean;
+  error: string | null;
+  isAdmin: boolean;
 }
-
-const ADMIN_EMAILS = ['agrinolan@gmail.com', 'tammylouise407@gmail.com'];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
-    let authSubscription: { unsubscribe: () => void } | null = null;
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      checkAdminStatus(session?.user?.email ?? null);
+      setLoading(false);
+    });
 
-    async function initializeAuth() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!isMounted) return;
-
-        if (session?.user) {
-          // Get user role
-          const { data: roleData } = await supabase
-            .rpc('get_user_role', { user_id: session.user.id });
-
-          setUser({
-            id: session.user.id,
-            email: session.user.email!,
-            role: session.user.email?.toLowerCase() in ADMIN_EMAILS ? 'admin' : 'user'
-          });
-
-          setIsAdmin(ADMIN_EMAILS.includes(session.user.email?.toLowerCase() || ''));
-        }
-        setLoading(false);
-
-        // Set up auth state change subscription
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-          if (!isMounted) return;
-
-          if (session?.user) {
-            // Get user role
-            const { data: roleData } = await supabase
-              .rpc('get_user_role', { user_id: session.user.id });
-
-            setUser({
-              id: session.user.id,
-              email: session.user.email!,
-              role: session.user.email?.toLowerCase() in ADMIN_EMAILS ? 'admin' : 'user'
-            });
-
-            setIsAdmin(ADMIN_EMAILS.includes(session.user.email?.toLowerCase() || ''));
-          } else {
-            setUser(null);
-            setIsAdmin(false);
-          }
-        });
-
-        authSubscription = subscription;
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    initializeAuth();
+    // Listen for changes on auth state
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      checkAdminStatus(session?.user?.email ?? null);
+    });
 
     return () => {
-      isMounted = false;
-      if (authSubscription) {
-        authSubscription.unsubscribe();
-      }
+      subscription.unsubscribe();
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ 
-      email, 
-      password,
-      options: {
-        emailRedirectTo: window.location.origin
-      }
-    });
-    if (error) throw error;
+  const checkAdminStatus = async (email: string | null) => {
+    if (!email) {
+      setIsAdmin(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('admin_emails')
+        .select('email')
+        .eq('email', email)
+        .single();
+
+      if (error) throw error;
+      setIsAdmin(!!data);
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      setIsAdmin(false);
+    }
   };
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ 
-      email, 
-      password,
-      options: {
-        emailRedirectTo: window.location.origin
-      }
-    });
-    if (error) throw error;
+  const signIn = async (email: string, password: string) => {
+    try {
+      setError(null);
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      // Check if the user is an admin after successful login
+      await checkAdminStatus(email);
+    } catch (error) {
+      console.error('Sign in error:', error);
+      setError(error instanceof Error ? error.message : 'Sign in failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      setError(null);
+      setLoading(true);
+      const { error } = await supabase.auth.signOut();
+
+      if (error) throw error;
+      setUser(null);
+      setIsAdmin(false);
+    } catch (error) {
+      console.error('Sign out error:', error);
+      setError(error instanceof Error ? error.message : 'Sign out failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, signIn, signOut, loading, error, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,45 +1,63 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { toast } from 'react-toastify';
-import { UserMinus, LogOut } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface AdminEmail {
   id: number;
   email: string;
   created_at: string;
+  first_name: string;
+  surname: string;
 }
 
 export default function AdminDashboard() {
   const { isAdmin, signOut } = useAuth();
-  const [adminEmails, setAdminEmails] = useState<AdminEmail[]>([]);
   const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [adminEmails, setAdminEmails] = useState<AdminEmail[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const testConnection = async () => {
-      try {
-        console.log('Testing database connection...');
-        const { data, error } = await supabase
-          .from('admin_emails')
-          .select('*')
-          .limit(1);
-
-        console.log('Test connection result:', { error, data });
-        
-        if (error) {
-          console.error('Database connection error:', error);
-          toast.error('Database connection failed. Please check the table exists.');
-        } else {
-          console.log('Database connection successful!');
-        }
-      } catch (error) {
-        console.error('Error testing connection:', error);
-        toast.error('Failed to connect to database');
-      }
-    };
-
-    testConnection();
+    fetchAdminEmails();
   }, []);
+
+  const fetchAdminEmails = async () => {
+    try {
+      setLoading(true);
+      const { data: emails, error: emailsError } = await supabase
+        .from('admin_emails')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (emailsError) throw emailsError;
+
+      // Fetch user data for each email
+      const emailsWithUserData = await Promise.all(
+        emails.map(async (email) => {
+          const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('first_name, surname')
+            .eq('email', email.email)
+            .single();
+
+          if (userError) throw userError;
+
+          return {
+            ...email,
+            ...user
+          };
+        })
+      );
+
+      setAdminEmails(emailsWithUserData);
+    } catch (error) {
+      console.error('Error fetching admin emails:', error);
+      toast.error('Failed to fetch admin emails');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddAdmin = async () => {
     if (!newAdminEmail || !newAdminEmail.includes('@')) {
@@ -48,43 +66,21 @@ export default function AdminDashboard() {
     }
 
     try {
-      console.log('Attempting to add admin:', { email: newAdminEmail.toLowerCase() });
-      const { error, data } = await supabase
+      setLoading(true);
+      const { error } = await supabase
         .from('admin_emails')
-        .insert({
-          email: newAdminEmail.toLowerCase(),
-          created_at: new Date().toISOString()
-        });
+        .insert([{ email: newAdminEmail }]);
 
-      console.log('Database response:', { error, data });
-      
-      if (error) {
-        console.error('Error:', error);
-        toast.error(error.message || 'Failed to add admin email');
-        return;
-      }
+      if (error) throw error;
 
       toast.success('Admin email added successfully');
       setNewAdminEmail('');
-      
-      // Refresh admin emails
-      const { data: refreshData, error: refreshError } = await supabase
-        .from('admin_emails')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      console.log('Refresh response:', { refreshError, refreshData });
-      
-      if (refreshError) {
-        console.error('Refresh error:', refreshError);
-        toast.error('Failed to refresh admin emails');
-        return;
-      }
-
-      setAdminEmails(refreshData || []);
+      fetchAdminEmails();
     } catch (error) {
       console.error('Error adding admin email:', error);
       toast.error('Failed to add admin email');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -94,6 +90,7 @@ export default function AdminDashboard() {
     }
 
     try {
+      setLoading(true);
       const { error } = await supabase
         .from('admin_emails')
         .delete()
@@ -102,86 +99,93 @@ export default function AdminDashboard() {
       if (error) throw error;
 
       toast.success('Admin email removed successfully');
-      
-      // Refresh admin emails
-      const { data, error: refreshError } = await supabase
-        .from('admin_emails')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (refreshError) throw refreshError;
-      setAdminEmails(data || []);
+      fetchAdminEmails();
     } catch (error) {
       console.error('Error removing admin email:', error);
       toast.error('Failed to remove admin email');
+    } finally {
+      setLoading(false);
     }
   };
 
   if (!isAdmin) {
-    window.location.href = '/';
-    return null;
+    return <div className="text-center py-8">You must be an admin to access this page</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
+    <div className="container mx-auto px-4 py-8">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold mb-6">Admin Management</h1>
+
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Add New Admin</h2>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={newAdminEmail}
+              onChange={(e) => setNewAdminEmail(e.target.value)}
+              placeholder="Enter admin email"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={loading}
+            />
             <button
-              onClick={signOut}
-              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+              onClick={handleAddAdmin}
+              disabled={loading || !newAdminEmail}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <LogOut className="h-4 w-4 inline-block mr-2" />
-              Sign Out
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Admin
+                </>
+              )}
             </button>
           </div>
+        </div>
 
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Admin Management</h2>
-              <div className="space-y-4">
-                <div className="flex flex-col">
-                  <div className="flex items-center mb-4">
-                    <input
-                      type="email"
-                      value={newAdminEmail}
-                      onChange={(e) => setNewAdminEmail(e.target.value)}
-                      placeholder="Enter admin email..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Active Admins</h2>
+          {loading ? (
+            <div className="flex justify-center py-4">
+              <svg className="animate-spin h-8 w-8 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {adminEmails.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">No admin emails found</div>
+              ) : (
+                adminEmails.map((admin) => (
+                  <div
+                    key={admin.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium">{admin.first_name} {admin.surname}</p>
+                      <p className="text-sm text-gray-500">{admin.email}</p>
+                      <p className="text-xs text-gray-400">Added on {new Date(admin.created_at).toLocaleDateString()}</p>
+                    </div>
                     <button
-                      onClick={handleAddAdmin}
-                      className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                      onClick={() => handleRemoveAdmin(admin.id)}
+                      className="text-red-500 hover:text-red-600"
                     >
-                      Add Admin
+                      <Trash2 className="h-5 w-5" />
                     </button>
                   </div>
-                  <div className="overflow-y-auto max-h-[400px]">
-                    {adminEmails.map((emailObj) => (
-                      <div
-                        key={emailObj.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-2"
-                      >
-                        <div>
-                          <p className="font-medium">{emailObj.email}</p>
-                          <p className="text-xs text-gray-400">
-                            Added {new Date(emailObj.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleRemoveAdmin(emailObj.id)}
-                          className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600"
-                        >
-                          <UserMinus className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                ))
+              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
