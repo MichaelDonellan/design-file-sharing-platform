@@ -96,6 +96,14 @@ function App() {
                     </PrivateRoute>
                   }
                 />
+                <Route
+                  path="/dashboard/edit/:id"
+                  element={
+                    <PrivateRoute>
+                      <EditListing />
+                    </PrivateRoute>
+                  }
+                />
                 <Route path="/payment/success" element={<PaymentSuccess />} />
                 <Route path="/plus-library" element={<PlusLibrary />} />
               </Routes>
