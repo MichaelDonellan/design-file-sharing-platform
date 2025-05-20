@@ -150,6 +150,45 @@ export default function SellerDashboard() {
     }
 
     try {
+      // First, get all associated files
+      const { data: files, error: filesError } = await supabase
+        .from('design_files')
+        .select('*')
+        .eq('design_id', listingId);
+
+      if (filesError) {
+        console.error('Error fetching files:', filesError);
+        toast.error('Failed to fetch associated files');
+        return;
+      }
+
+      // Delete files from storage
+      if (files && files.length > 0) {
+        const storagePaths = files.map(file => file.path);
+        const { error: storageError } = await supabase.storage
+          .from('designs')
+          .remove(storagePaths);
+
+        if (storageError) {
+          console.error('Error deleting storage files:', storageError);
+          toast.error('Failed to delete design files');
+          return;
+        }
+      }
+
+      // Delete files from design_files table
+      const { error: designFilesError } = await supabase
+        .from('design_files')
+        .delete()
+        .eq('design_id', listingId);
+
+      if (designFilesError) {
+        console.error('Error deleting design files:', designFilesError);
+        toast.error('Failed to delete design files from database');
+        return;
+      }
+
+      // Delete the design
       const { error } = await supabase
         .from('designs')
         .delete()
