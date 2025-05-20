@@ -19,6 +19,31 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Add agrinolan@gmail.com as admin if not already present
+    const addAgrinolan = async () => {
+      try {
+        const { data: existingAdmin, error: existingError } = await supabase
+          .from('admin_emails')
+          .select('id')
+          .eq('email', 'agrinolan@gmail.com')
+          .single();
+
+        if (existingError && existingError.code === 'PGRST116') {
+          // If admin doesn't exist, add them
+          const { error: insertError } = await supabase
+            .from('admin_emails')
+            .insert([{ email: 'agrinolan@gmail.com' }]);
+
+          if (insertError) throw insertError;
+          toast.success('Added agrinolan@gmail.com as admin');
+        }
+      } catch (error) {
+        console.error('Error adding agrinolan as admin:', error);
+        toast.error('Failed to add agrinolan as admin');
+      }
+    };
+
+    addAgrinolan();
     fetchAdminEmails();
   }, []);
 
