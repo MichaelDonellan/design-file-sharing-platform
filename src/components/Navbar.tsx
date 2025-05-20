@@ -9,7 +9,11 @@ import { supabase } from '../lib/supabase';
 import LoginPanel from './LoginPanel';
 import RegisterPanel from './RegisterPanel';
 
-export default function Navbar() {
+interface NavbarProps {
+  isAdmin: boolean;
+}
+
+export default function Navbar({ isAdmin }: NavbarProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -87,6 +91,15 @@ export default function Navbar() {
             </Link>
             {user ? (
               <>
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <ShoppingBag size={20} />
+                    <span className="ml-2">Admin</span>
+                  </Link>
+                )}
                 <Link
                   to="/upload"
                   className="text-gray-600 hover:text-gray-900"

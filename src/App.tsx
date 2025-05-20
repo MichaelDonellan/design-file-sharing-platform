@@ -32,26 +32,20 @@ function App() {
       <div>
         <BrowserRouter>
           <div className="min-h-screen bg-gray-50">
-            <Navbar />
+            <Navbar isAdmin={false} />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
-                <Route
-                  path="/admin"
-                  element={
-                    <PrivateRoute>
-                      <AdminDashboard />
-                    </PrivateRoute>
-                  }
-                />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/payment/success" element={<PaymentSuccess />} />
+                <Route path="/plus-library" element={<PlusLibrary />} />
                 <Route path="/files" element={<Files />} />
                 <Route path="/files/:id" element={<FileDetails />} />
                 <Route path="/files/:id/edit" element={<EditFile />} />
                 <Route path="/files/:id/reject" element={<RejectFile />} />
                 <Route path="/files/:id/approve" element={<ApproveFile />} />
-                <Route path="/categories" element={<Categories />} />
                 <Route path="/design/:id" element={<DesignDetail />} />
                 <Route path="/store/:storeName" element={<PublicStore />} />
                 <Route
@@ -64,10 +58,13 @@ function App() {
                 />
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+
+                {/* Private Routes */}
                 <Route
                   path="/dashboard/profile"
                   element={
                     <PrivateRoute>
+                      <Navbar isAdmin={false} />
                       <Profile />
                     </PrivateRoute>
                   }
@@ -76,6 +73,7 @@ function App() {
                   path="/dashboard/store"
                   element={
                     <PrivateRoute>
+                      <Navbar isAdmin={false} />
                       <Store />
                     </PrivateRoute>
                   }
@@ -84,6 +82,7 @@ function App() {
                   path="/dashboard/settings"
                   element={
                     <PrivateRoute>
+                      <Navbar isAdmin={false} />
                       <Settings />
                     </PrivateRoute>
                   }
@@ -92,6 +91,7 @@ function App() {
                   path="/dashboard/seller"
                   element={
                     <PrivateRoute>
+                      <Navbar isAdmin={false} />
                       <SellerDashboard />
                     </PrivateRoute>
                   }
@@ -106,6 +106,16 @@ function App() {
                 />
                 <Route path="/payment/success" element={<PaymentSuccess />} />
                 <Route path="/plus-library" element={<PlusLibrary />} />
+                {/* Admin Routes */}
+                <Route
+                  path="/admin"
+                  element={
+                    <PrivateRoute>
+                      <Navbar isAdmin={true} />
+                      <AdminDashboard />
+                    </PrivateRoute>
+                  }
+                />
               </Routes>
             </div>
           </div>

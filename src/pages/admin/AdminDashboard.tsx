@@ -8,8 +8,6 @@ interface AdminEmail {
   id: number;
   email: string;
   created_at: string;
-  first_name: string;
-  surname: string;
 }
 
 export default function AdminDashboard() {
@@ -52,7 +50,7 @@ export default function AdminDashboard() {
       setLoading(true);
       const { data: admins, error: error } = await supabase
         .from('admin_emails')
-        .select('*, users:email!inner (first_name, surname)')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -170,26 +168,53 @@ export default function AdminDashboard() {
           ) : (
             <div className="space-y-4">
               {adminEmails.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">No admin emails found</div>
-              ) : (
-                adminEmails.map((admin) => (
-                  <div
-                    key={admin.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium">{admin.first_name} {admin.surname}</p>
-                      <p className="text-sm text-gray-500">{admin.email}</p>
-                      <p className="text-xs text-gray-400">Added on {new Date(admin.created_at).toLocaleDateString()}</p>
-                    </div>
-                    <button
-                      onClick={() => handleRemoveAdmin(admin.id)}
-                      className="text-red-500 hover:text-red-600"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
+                <div className="mt-6">
+                  <h2 className="text-xl font-semibold mb-4">Active Admins</h2>
+                  <div className="space-y-4">
+                    {adminEmails.map((admin) => (
+                      <div
+                        key={admin.id}
+                        className="bg-white p-4 rounded-lg shadow"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">{admin.email}</p>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveAdmin(admin.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))
+                </div>
+              ) : (
+                <div className="mt-6">
+                  <h2 className="text-xl font-semibold mb-4">Active Admins</h2>
+                  <div className="space-y-4">
+                    {adminEmails.map((admin) => (
+                      <div
+                        key={admin.id}
+                        className="bg-white p-4 rounded-lg shadow"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">{admin.email}</p>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveAdmin(admin.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           )}
