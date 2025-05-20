@@ -25,6 +25,7 @@ import FileDetails from './pages/FileDetails';
 import EditFile from './pages/EditFile';
 import RejectFile from './pages/RejectFile';
 import ApproveFile from './pages/ApproveFile';
+import VerifyEmail from './pages/auth/VerifyEmail';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
                 <Route path="/files/:id/approve" element={<ApproveFile />} />
                 <Route path="/design/:id" element={<DesignDetail />} />
                 <Route path="/store/:storeName" element={<PublicStore />} />
+                <Route path="/auth/verify-email" element={<VerifyEmail />} />
                 <Route
                   path="/upload"
                   element={

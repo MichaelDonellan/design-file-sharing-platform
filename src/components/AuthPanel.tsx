@@ -38,15 +38,16 @@ export default function AuthPanel({ isOpen, onClose, mode }: AuthPanelProps) {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             first_name: firstName,
-            surname,
+            surname
           },
-        },
+          emailRedirectTo: `${window.location.origin}/auth/verify-email`
+        }
       });
 
       if (error) throw error;
