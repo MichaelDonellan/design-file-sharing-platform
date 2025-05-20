@@ -97,7 +97,10 @@ export default function EditListing() {
   };
 
   const handleDelete = async () => {
-    if (!listing) return;
+    if (!listing) {
+      toast.error('Design not found');
+      return;
+    }
 
     if (!window.confirm('Are you sure you want to delete this design? This action cannot be undone.')) {
       return;
@@ -112,20 +115,28 @@ export default function EditListing() {
         .delete()
         .eq('id', listing.id);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error('Error deleting design:', deleteError);
+        toast.error(deleteError.message || 'Failed to delete design');
+        return;
+      }
 
       // Delete associated files from storage
       const { error: storageError } = await supabase.storage
         .from('designs')
         .remove([`previews/${listing.id}`]);
 
-      if (storageError) throw storageError;
+      if (storageError) {
+        console.error('Error deleting storage files:', storageError);
+        toast.error('Failed to delete design files');
+        return;
+      }
 
       toast.success('Design deleted successfully');
       navigate('/dashboard/seller');
     } catch (error) {
       console.error('Error deleting design:', error);
-      toast.error('Failed to delete design');
+      toast.error('Failed to delete design. Please try again.');
     } finally {
       setLoading(false);
     }

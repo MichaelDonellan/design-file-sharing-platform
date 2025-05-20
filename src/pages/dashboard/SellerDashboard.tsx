@@ -140,19 +140,32 @@ export default function SellerDashboard() {
   };
 
   const handleDeleteListing = async (listingId: string) => {
+    if (!listingId) {
+      toast.error('Invalid design ID');
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to delete this design? This action cannot be undone.')) {
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('designs')
         .delete()
         .eq('id', listingId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting design:', error);
+        toast.error(error.message || 'Failed to delete design');
+        return;
+      }
 
       toast.success('Design deleted successfully');
       await fetchSellerData();
     } catch (error) {
       console.error('Error deleting design:', error);
-      toast.error('Failed to delete design');
+      toast.error('Failed to delete design. Please try again.');
     }
   };
 
