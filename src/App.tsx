@@ -20,6 +20,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
 import RegisterPanel from './components/RegisterPanel';
+import { ToastContainer } from 'react-toastify';
 
 function App() {
   const { isAdmin } = useAuth();
