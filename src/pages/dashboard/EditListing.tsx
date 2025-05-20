@@ -147,6 +147,43 @@ export default function EditListing() {
         return;
       }
 
+      // Delete mockups from storage
+      const { data: mockups, error: mockupsError } = await supabase
+        .from('design_mockups')
+        .select('*')
+        .eq('design_id', listing.id);
+
+      if (mockupsError) {
+        console.error('Error fetching mockups:', mockupsError);
+        toast.error('Failed to fetch associated mockups');
+        return;
+      }
+
+      if (mockups && mockups.length > 0) {
+        const mockupPaths = mockups.map(mockup => mockup.path);
+        const { error: mockupStorageError } = await supabase.storage
+          .from('designs')
+          .remove(mockupPaths);
+
+        if (mockupStorageError) {
+          console.error('Error deleting mockup files:', mockupStorageError);
+          toast.error('Failed to delete mockup files');
+          return;
+        }
+
+        // Delete mockups from database
+        const { error: mockupDbError } = await supabase
+          .from('design_mockups')
+          .delete()
+          .eq('design_id', listing.id);
+
+        if (mockupDbError) {
+          console.error('Error deleting mockups:', mockupDbError);
+          toast.error('Failed to delete mockups from database');
+          return;
+        }
+      }
+
       // Delete the design
       const { error: deleteError } = await supabase
         .from('designs')
