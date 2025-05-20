@@ -35,15 +35,6 @@ function App() {
         <BrowserRouter>
           <div className="min-h-screen bg-gray-50">
             <Navbar />
-            <div className="fixed bottom-4 right-4 z-50">
-              <button
-                onClick={() => setIsRegisterOpen(true)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 shadow-lg"
-              >
-                Register
-              </button>
-            </div>
-
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <Routes>
                 <Route path="/" element={<Home />} />
