@@ -34,13 +34,28 @@ async function checkConnection() {
   try {
     const { error } = await supabase.from('designs').select('id').limit(1);
     if (error) {
-      console.error('Supabase connection error:', error);
+      console.error('Supabase connection error:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
       return false;
     }
     isInitialized = true;
     return true;
-  } catch (err) {
-    console.error('Failed to connect to Supabase:', err);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('Failed to connect to Supabase:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      });
+    } else {
+      console.error('Failed to connect to Supabase:', {
+        message: 'Unknown error occurred'
+      });
+    }
     return false;
   }
 }
