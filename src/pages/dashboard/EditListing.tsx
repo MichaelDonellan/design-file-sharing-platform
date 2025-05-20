@@ -397,8 +397,9 @@ export default function EditListing() {
               step="0.01"
               value={listing.price || ''}
               onChange={(e) => setListing({ ...listing, price: e.target.value ? parseFloat(e.target.value) : 0 })}
-              className="flex-1 block w-full rounded-none rounded-r-md min-w-0 border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              required
+              className={`flex-1 block w-full rounded-none rounded-r-md min-w-0 border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${listing.is_freebie ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              required={!listing.is_freebie}
+              disabled={listing.is_freebie}
             />
           </div>
         </div>
