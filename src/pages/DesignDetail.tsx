@@ -343,16 +343,15 @@ alert(`Failed to download design: ${err && err.message ? err.message : JSON.stri
     return Math.round((usd * EXCHANGE_RATES[to]) * 100) / 100;
   };
 
+  let content;
   if (loading) {
-    return (
+    content = (
       <div className="flex justify-center items-center h-64">
         <div className="text-gray-600">Loading design...</div>
       </div>
     );
-  }
-
-  if (error || !design) {
-    return (
+  } else if (error || !design) {
+    content = (
       <div className="text-center py-12">
         <div className="text-red-600 mb-4">{error || 'Design not found'}</div>
         <button 
@@ -363,9 +362,8 @@ alert(`Failed to download design: ${err && err.message ? err.message : JSON.stri
         </button>
       </div>
     );
-  }
-
-  return (
+  } else {
+    content = (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="relative">
@@ -580,4 +578,6 @@ alert(`Failed to download design: ${err && err.message ? err.message : JSON.stri
       </div>
     </div>
   );
+  }
+  return content;
 }
