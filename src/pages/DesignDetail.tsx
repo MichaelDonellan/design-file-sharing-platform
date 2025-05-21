@@ -27,7 +27,21 @@ const EXCHANGE_RATES: Record<string, number> = {
 
 export default function DesignDetail() {
 
-
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [design, setDesign] = useState<Design | null>(null);
+  const [store, setStore] = useState<Store | null>(null);
+  const [mockups, setMockups] = useState<DesignMockup[]>([]);
+  const [files, setFiles] = useState<DesignFile[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [relatedDesigns, setRelatedDesigns] = useState<Design[]>([]);
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [currency, setCurrency] = useState('USD');
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (user && id && design && design.price && design.price > 0) {
