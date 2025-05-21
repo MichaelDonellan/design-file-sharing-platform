@@ -42,6 +42,7 @@ export default function DesignDetail() {
   const [isFavorited, setIsFavorited] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [hasPurchased, setHasPurchased] = useState(false);
 
   useEffect(() => {
     if (user && id && design && design.price && design.price > 0) {
