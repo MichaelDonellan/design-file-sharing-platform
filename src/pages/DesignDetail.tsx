@@ -291,8 +291,6 @@ export default function DesignDetail() {
 
         if (updateError) throw updateError;
       }
-        .from('designs')
-        .download(filePath);
 
       if (error) {
         // Handle specific storage errors
