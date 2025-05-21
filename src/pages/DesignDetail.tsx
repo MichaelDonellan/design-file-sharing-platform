@@ -252,17 +252,20 @@ export default function DesignDetail() {
         .download(filePath);
 
       if (downloadError) {
-        // If that fails, try with the old path format
-        const oldPath = filePath.replace(/^files\//, '');
-        const { data: oldData, error: oldError } = await supabase.storage
+        // Try with the user ID prefix format
+        const parts = filePath.split('/');
+        const fileName = parts.pop();
+        const userId = parts[0];
+        const newPath = `${userId}/${fileName}`;
+        const { data: newData, error: newError } = await supabase.storage
           .from('designs')
-          .download(oldPath);
+          .download(newPath);
 
-        if (oldError) {
-          throw new Error(`Failed to access file at paths: ${filePath} and ${oldPath}`);
+        if (newError) {
+          throw new Error(`Failed to access file at paths: ${filePath} and ${newPath}`);
         }
         
-        const blob = new Blob([oldData], { type: 'application/octet-stream' });
+        const blob = new Blob([newData], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
