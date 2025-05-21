@@ -242,78 +242,96 @@ export default function DesignDetail() {
       console.error('Error toggling favorite:', err);
       alert('Failed to update favorite status');
     } finally {
-      setIsProcessing(false);
-    }
-  };
 
-  const handleDownload = async () => {
-    if (!design || !files.length) return;
+const handleDownload = async () => {
+if (!design || !files.length) {
+console.warn('Download aborted: missing design or files', { design, files });
+alert('No design or files available for download.');
+return;
+}
 
-    // Always require login before download/purchase
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+// Always require login before download/purchase
+if (!user) {
+console.warn('Download aborted: user not logged in');
+navigate('/login');
+return;
+}
 
-    if (design.price && user) {
-      // Handle purchase/download logic here
-      // This would typically involve payment processing
-      alert('Purchase functionality coming soon!');
-      return;
-    }
+if (design.price && user) {
+// Handle purchase/download logic here
+alert('Purchase functionality coming soon!');
+return;
+}
 
-    // For free designs, proceed with download
-    try {
-      // Get the first file from the files array
-      const mainFile = files[0];
-      if (!mainFile?.file_path) {
-        throw new Error('No file path available');
-      }
+// For free designs, proceed with download
+try {
+// Get the first file from the files array
+const mainFile = files[0];
+if (!mainFile?.file_path) {
+console.error('No file path available in mainFile:', mainFile);
+alert('No file path available for this design.');
+return;
+}
 
-      // Extract the filename from the file path
-      const filePath = mainFile.file_path;
-      const fileName = filePath.split('/').pop() || design.name;
+// Extract the filename from the file path
+const filePath = mainFile.file_path;
+const fileName = filePath.split('/').pop() || design.name;
 
-      // Debug logs
-      console.log('Download attempt:', { filePath, user });
+// Debug logs
+console.log('Download attempt:', { filePath, user, files, design });
 
-      // Download the file
-      const { data, error } = await supabase.storage
-        .from('designs')
-        .download(filePath);
+// Check if file exists in storage before download
+const pathParts = filePath.split('/');
+const fileParent = pathParts.slice(0, -1).join('/');
+const fileBase = pathParts[pathParts.length - 1];
+console.log('Checking existence in bucket:', { fileParent, fileBase });
+const { data: listData, error: listError } = await supabase.storage.from('designs').list(fileParent || undefined);
+if (listError) {
+console.error('Error listing files in storage:', listError);
+} else {
+const found = listData && listData.some(f => f.name === fileBase);
+console.log('File existence check:', found, listData);
+if (!found) {
+alert('File does not exist in storage. Please contact support.');
+return;
+}
+}
 
-      if (error) {
-        console.error('Supabase download error:', error);
-        alert(`Failed to download design: ${error.message || error.error || JSON.stringify(error)}`);
-        throw error;
-      }
+// Download the file
+const { data, error } = await supabase.storage
+.from('designs')
+.download(filePath);
 
-      // Create a download link and trigger it
-      const url = URL.createObjectURL(data);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+if (error) {
+console.error('Supabase download error:', error, { filePath });
+alert(`Failed to download design: ${error.message || error.error || JSON.stringify(error)}`);
+return;
+}
 
-      // Increment download count
-      const { error: updateError } = await supabase
-        .from('designs')
-        .update({ downloads: (design.downloads || 0) + 1 })
-        .eq('id', design.id);
+// Create a download link and trigger it
+const url = URL.createObjectURL(data);
+const link = document.createElement('a');
+link.href = url;
+link.download = fileName;
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+URL.revokeObjectURL(url);
 
-      if (updateError) throw updateError;
-    } catch (err) {
-      console.error('Error downloading design:', err);
-      alert(`Failed to download design: ${err && err.message ? err.message : JSON.stringify(err)}`);
-    }
-  };
+// Increment download count
+const { error: updateError } = await supabase
+.from('designs')
+.update({ downloads: (design.downloads || 0) + 1 })
+.eq('id', design.id);
 
-  const getCurrencySymbol = (currency: string) => {
-    const found = SUPPORTED_CURRENCIES.find(c => c.code === currency);
-    return found ? found.symbol : '$';
+if (updateError) {
+console.error('Error updating download count:', updateError);
+}
+} catch (err) {
+console.error('Error downloading design:', err);
+alert(`Failed to download design: ${err && err.message ? err.message : JSON.stringify(err)}`);
+}
+};
   };
 
   const convertPrice = (usd: number, to: string) => {
