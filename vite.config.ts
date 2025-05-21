@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   return {
   plugins: [react()],
   optimizeDeps: {
-    exclude: ['lucide-react', 'axios'],
+    exclude: ['lucide-react', 'axios', 'react-router-dom'],
   },
   preview: {
     port: 5173,
