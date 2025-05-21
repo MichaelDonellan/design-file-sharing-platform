@@ -242,13 +242,16 @@ export default function DesignDetail() {
       console.error('Error toggling favorite:', err);
       alert('Failed to update favorite status');
     } finally {
+      setIsProcessing(false);
+    }
+  };
 
-const handleDownload = async () => {
-if (!design || !files.length) {
-console.warn('Download aborted: missing design or files', { design, files });
-alert('No design or files available for download.');
-return;
-}
+  const handleDownload = async () => {
+    if (!design || !files.length) {
+      console.warn('Download aborted: missing design or files', { design, files });
+      alert('No design or files available for download.');
+      return;
+    }
 
 // Always require login before download/purchase
 if (!user) {
