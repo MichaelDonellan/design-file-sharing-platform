@@ -304,14 +304,14 @@ export default function DesignDetail() {
       }
 
       // Create a download link and trigger it
-      const url = URL.createObjectURL(data);
+      const downloadUrl = URL.createObjectURL(data);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = downloadUrl;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(downloadUrl);
 
       // Increment download count
       const { error: updateError } = await supabase
