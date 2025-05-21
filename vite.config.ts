@@ -6,7 +6,16 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     optimizeDeps: {
-      exclude: ['lucide-react', 'axios'],
+      include: [
+        'lucide-react',
+        'axios',
+        '@supabase/supabase-js',
+        'date-fns',
+        'react-hot-toast',
+        'react-router-dom',
+        'swiper',
+        '@headlessui/react'
+      ]
     },
     preview: {
       port: 5173,
@@ -26,7 +35,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       rollupOptions: {
-        external: ['missing-dependency-name'] // TODO: Replace with actual missing dependency
+        external: [] // No missing dependency, list is now empty
       }
     }
   };
