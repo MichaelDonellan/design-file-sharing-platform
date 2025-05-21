@@ -245,36 +245,38 @@ export default function DesignDetail() {
       // Extract components from the file path
       const filePath = mainFile.file_path;
       const originalFileName = filePath.split('/').pop() || design.name;
+
+      // Extract the path from the public URL
+      const pathComponents = filePath.split('/');
+      const storagePath = pathComponents.slice(6).join('/'); // Skip past the public URL parts
       
-      // Try direct download from the stored path
+      // Try downloading from the storage path
       const { data: fileData, error: downloadError } = await supabase.storage
         .from('designs')
-        .download(filePath);
+        .download(storagePath);
 
       if (downloadError) {
-        // Extract components from the path
-        const pathComponents = filePath.split('/');
-        if (pathComponents.length < 3) {
-          throw new Error(`Invalid file path format: ${filePath}`);
+        // If that fails, try to extract the user ID and filename
+        const parts = storagePath.split('/');
+        if (parts.length < 2) {
+          throw new Error(`Invalid storage path format: ${storagePath}`);
         }
         
-        // Get the user ID, prefix, and file name
-        const userId = pathComponents[0];
-        const prefix = pathComponents[1];
-        const fileName = pathComponents[2];
+        const userId = parts[0];
+        const fileName = parts[1];
         
-        if (!userId || !prefix || !fileName) {
-          throw new Error(`Invalid file path format: ${filePath}`);
+        if (!userId || !fileName) {
+          throw new Error(`Invalid storage path format: ${storagePath}`);
         }
         
-        // Try downloading from the correct format
-        const correctPath = `${userId}/${prefix}_${fileName}`;
+        // Try downloading from the user ID prefixed path
+        const userPrefixedPath = `${userId}/design_${fileName}`;
         const { data: newData, error: newError } = await supabase.storage
           .from('designs')
-          .download(correctPath);
+          .download(userPrefixedPath);
 
         if (newError) {
-          throw new Error(`Failed to access file at paths: ${filePath} and ${correctPath}`);
+          throw new Error(`Failed to access file at paths: ${storagePath} and ${userPrefixedPath}`);
         }
         
         const blob = new Blob([newData], { type: 'application/octet-stream' });
