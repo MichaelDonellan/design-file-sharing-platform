@@ -268,9 +268,16 @@ export default function Upload() {
 
       console.log('File uploaded successfully:', data.path);
 
-      // Store the actual storage path instead of public URL
-      console.log('File path stored in database:', data.path);
-      return data.path;
+      const { data: { publicUrl } } = supabase.storage
+        .from('designs')
+        .getPublicUrl(data.path);
+
+      if (!publicUrl) {
+        throw new Error(`Failed to get public URL for ${prefix} file`);
+      }
+
+      console.log('Generated public URL:', publicUrl);
+      return publicUrl;
     } catch (error) {
       console.error(`Error in uploadFile (${prefix}):`, error);
       throw error;

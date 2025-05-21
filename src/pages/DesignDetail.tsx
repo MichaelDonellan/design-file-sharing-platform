@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { supabase, getPublicUrl } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import type { Design, Store, Review, DesignMockup, DesignFile } from '../types';
 import { Download, Calendar, Tag, Store as StoreIcon, Star, ShoppingCart, Heart, Share2, Eye } from 'lucide-react';
@@ -26,6 +26,44 @@ const EXCHANGE_RATES: Record<string, number> = {
 };
 
 export default function DesignDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [design, setDesign] = useState<Design | null>(null);
+  const [store, setStore] = useState<Store | null>(null);
+  const [mockups, setMockups] = useState<DesignMockup[]>([]);
+  const [files, setFiles] = useState<DesignFile[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [relatedDesigns, setRelatedDesigns] = useState<Design[]>([]);
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [currency, setCurrency] = useState('USD');
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState('');
+  const [hasPurchased, setHasPurchased] = useState(false);
+
+  useEffect(() => {
+    if (user && id && design && design.price && design.price > 0) {
+      // Check if user has purchased
+      const checkPurchase = async () => {
+        const { data, error } = await supabase
+          .from('purchases')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('design_id', id)
+          .single();
+        setHasPurchased(!!data);
+      };
+      checkPurchase();
+    }
+  }, [user, id, design]);
+
+  // Stub for purchase handler
+  const handlePurchase = () => {
+    alert('Purchase functionality coming soon!');
+  };
+
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -224,17 +262,22 @@ export default function DesignDetail() {
   };
 
   const handleDownload = async () => {
-    if (!design || !files.length) {
-      setError('No files available for download');
-      return;
-    }
-    
+    if (!design || !files.length) return;
+
     // Always require login before download/purchase
     if (!user) {
       navigate('/login');
       return;
     }
 
+    if (design.price && user) {
+      // Handle purchase/download logic here
+      // This would typically involve payment processing
+      alert('Purchase functionality coming soon!');
+      return;
+    }
+
+    // For free designs, proceed with download
     try {
       // Get the first file from the files array
       const mainFile = files[0];
@@ -242,67 +285,26 @@ export default function DesignDetail() {
         throw new Error('No file path available');
       }
 
-      // Extract components from the file path
+      // Extract the filename from the file path
       const filePath = mainFile.file_path;
-      const originalFileName = filePath.split('/').pop() || design.name;
+      const fileName = filePath.split('/').pop() || design.name;
 
-      // Extract the path from the public URL
-      const pathComponents = filePath.split('/');
-      const storagePath = pathComponents.slice(6).join('/'); // Skip past the public URL parts
-      
-      // Try downloading from the storage path
-      const { data: fileData, error: downloadError } = await supabase.storage
+      // Debug logs
+      console.log('Download attempt:', { filePath, user });
+
+      // Download the file
+      const { data, error } = await supabase.storage
         .from('designs')
-        .download(storagePath);
+        .download(filePath);
 
-      if (downloadError) {
-        // If that fails, try to extract the user ID and filename
-        const parts = storagePath.split('/');
-        if (parts.length < 2) {
-          throw new Error(`Invalid storage path format: ${storagePath}`);
-        }
-        
-        const userId = parts[0];
-        const fileName = parts[1];
-        
-        if (!userId || !fileName) {
-          throw new Error(`Invalid storage path format: ${storagePath}`);
-        }
-        
-        // Try downloading from the user ID prefixed path
-        const userPrefixedPath = `${userId}/design_${fileName}`;
-        const { data: newData, error: newError } = await supabase.storage
-          .from('designs')
-          .download(userPrefixedPath);
-
-        if (newError) {
-          throw new Error(`Failed to access file at paths: ${storagePath} and ${userPrefixedPath}`);
-        }
-        
-        const blob = new Blob([newData], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = originalFileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        if (design) {
-          const { error: updateError } = await supabase
-            .from('designs')
-            .update({ downloads: (design.downloads || 0) + 1 })
-            .eq('id', design.id);
-
-          if (updateError) throw updateError;
-        }
-        return;
+      if (error) {
+        console.error('Supabase download error:', error);
+        alert(`Failed to download design: ${error.message || error.error || JSON.stringify(error)}`);
+        throw error;
       }
 
-      // Create a blob URL from the file data
-      const blob = new Blob([fileData], { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
+      // Create a download link and trigger it
+      const url = URL.createObjectURL(data);
       const link = document.createElement('a');
       link.href = url;
       link.download = fileName;
@@ -311,27 +313,16 @@ export default function DesignDetail() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      // Increment download count if design exists
-      if (design) {
-        const { error: updateError } = await supabase
-          .from('designs')
-          .update({ downloads: (design.downloads || 0) + 1 })
-          .eq('id', design.id);
+      // Increment download count
+      const { error: updateError } = await supabase
+        .from('designs')
+        .update({ downloads: (design.downloads || 0) + 1 })
+        .eq('id', design.id);
 
-        if (updateError) {
-          console.error('Error updating download count:', updateError);
-          // Provide more specific error messages
-          if (updateError instanceof Error) {
-            alert(updateError.message || 'Failed to update download count');
-          } else {
-            alert('Failed to update download count');
-          }
-          throw updateError;
-        }
-      }
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      setError('Failed to download file. Please try again later.');
+      if (updateError) throw updateError;
+    } catch (err) {
+      console.error('Error downloading design:', err);
+      alert(`Failed to download design: ${err && err.message ? err.message : JSON.stringify(err)}`);
     }
   };
 
@@ -518,13 +509,26 @@ export default function DesignDetail() {
                 <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
                 <span>{isFavorited ? 'Favorited' : 'Favorite'}</span>
               </button>
-              <button
-                onClick={handleDownload}
-                className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-              >
-                <Download className="w-5 h-5" />
-                <span>{design.price ? `Buy for $${design.price}` : 'Download'}</span>
-              </button>
+              {/* Download button logic: show if free, or if user has purchased */}
+{(design.price === null || design.price === 0 || hasPurchased) && (
+  <button
+    onClick={handleDownload}
+    className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+  >
+    <Download className="w-5 h-5" />
+    <span>{design.price ? 'Download' : 'Download'}</span>
+  </button>
+)}
+{/* Show Buy button if not purchased and paid product */}
+{design.price && design.price > 0 && !hasPurchased && (
+  <button
+    onClick={handlePurchase}
+    className="flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
+  >
+    <ShoppingCart className="w-5 h-5" />
+    <span>{`Buy for $${design.price}`}</span>
+  </button>
+) }
               <button
                 onClick={() => {
                   navigator.share({
