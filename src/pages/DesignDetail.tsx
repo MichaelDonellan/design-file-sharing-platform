@@ -517,13 +517,14 @@ alert(`Failed to download design: ${err && err.message ? err.message : JSON.stri
                 <span>{isFavorited ? 'Favorited' : 'Favorite'}</span>
               </button>
               {/* Download button logic: show if free, or if user has purchased */}
+{/* Download button logic: show if free, or if user has purchased */}
 {(design.price === null || design.price === 0 || hasPurchased) && (
   <button
     onClick={handleDownload}
     className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
   >
     <Download className="w-5 h-5" />
-    <span>{design.price ? 'Download' : 'Download'}</span>
+    <span>Download</span>
   </button>
 )}
 {/* Show Buy button if not purchased and paid product */}
@@ -535,7 +536,7 @@ alert(`Failed to download design: ${err && err.message ? err.message : JSON.stri
     <ShoppingCart className="w-5 h-5" />
     <span>{`Buy for $${design.price}`}</span>
   </button>
-) }
+)}
               <button
                 onClick={() => {
                   navigator.share({
