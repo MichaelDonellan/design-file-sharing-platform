@@ -259,29 +259,41 @@ export default function DesignDetail() {
           .download(oldPath);
 
         if (oldError) {
-          // If both paths fail, try to get a public URL
-          const { publicUrl: publicUrlData, error: urlError } = getPublicUrl(filePath);
-          if (urlError || !publicUrlData) {
-            throw new Error(`Failed to access file at paths: ${filePath} and ${oldPath}`);
-          }
-          
-          // If we have a public URL, use it
-          window.open(publicUrlData, '_blank');
-          return;
+          throw new Error(`Failed to access file at paths: ${filePath} and ${oldPath}`);
         }
-
-        // Create a blob URL from the old path data
+        
         const blob = new Blob([oldData], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        if (design) {
+          const { error: updateError } = await supabase
+            .from('designs')
+            .update({ downloads: (design.downloads || 0) + 1 })
+            .eq('id', design.id);
+
+          if (updateError) throw updateError;
+        }
         return;
       }
 
       // Create a blob URL from the file data
       const blob = new Blob([fileData], { type: 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
       // Increment download count if design exists
       if (design) {
         const { error: updateError } = await supabase
@@ -291,33 +303,10 @@ export default function DesignDetail() {
 
         if (updateError) throw updateError;
       }
-
-      if (error) {
-        // Handle specific storage errors
-        if (error.message.includes('not found')) {
-          throw new Error('File not found in storage');
-        }
-        if (error.message.includes('permission')) {
-          throw new Error('Insufficient permissions to access file');
-        }
-        throw error;
-      }
-
-      // Create a download link and trigger it
-      const downloadUrl = URL.createObjectURL(data);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(downloadUrl);
-
-      // Increment download count
-      const { error: updateError } = await supabase
-        .from('designs')
-        .update({ downloads: (design.downloads || 0) + 1 })
-        .eq('id', design.id);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      setError('Failed to download file. Please try again later.');
+    }
 
       if (updateError) throw updateError;
     } catch (err) {
