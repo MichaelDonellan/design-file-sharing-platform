@@ -580,4 +580,3 @@ alert(`Failed to download design: ${err && err.message ? err.message : JSON.stri
       </div>
     </div>
   );
-}
