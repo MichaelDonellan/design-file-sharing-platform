@@ -252,27 +252,29 @@ export default function DesignDetail() {
         .download(filePath);
 
       if (downloadError) {
-        // Try with the user ID prefix format
+        // Extract components from the path
         const pathComponents = filePath.split('/');
-        const storedFileName = pathComponents.pop();
-        if (!storedFileName) {
+        if (pathComponents.length < 3) {
           throw new Error(`Invalid file path format: ${filePath}`);
         }
         
-        // Get the user ID from the path
+        // Get the user ID, prefix, and file name
         const userId = pathComponents[0];
-        if (!userId) {
+        const prefix = pathComponents[1];
+        const fileName = pathComponents[2];
+        
+        if (!userId || !prefix || !fileName) {
           throw new Error(`Invalid file path format: ${filePath}`);
         }
         
-        // Try downloading from the user ID prefixed path
-        const userPrefixedPath = `${userId}/${storedFileName}`;
+        // Try downloading from the correct format
+        const correctPath = `${userId}/${prefix}_${fileName}`;
         const { data: newData, error: newError } = await supabase.storage
           .from('designs')
-          .download(userPrefixedPath);
+          .download(correctPath);
 
         if (newError) {
-          throw new Error(`Failed to access file at paths: ${filePath} and ${userPrefixedPath}`);
+          throw new Error(`Failed to access file at paths: ${filePath} and ${correctPath}`);
         }
         
         const blob = new Blob([newData], { type: 'application/octet-stream' });
