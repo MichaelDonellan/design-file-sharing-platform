@@ -301,19 +301,6 @@ export default function DesignDetail() {
           .update({ downloads: (design.downloads || 0) + 1 })
           .eq('id', design.id);
 
-        if (updateError) throw updateError;
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      setError('Failed to download file. Please try again later.');
-    }
-
-    try {
-      if (design) {
-        const { error: updateError } = await supabase
-          .from('designs')
-          .update({ downloads: (design.downloads || 0) + 1 })
-          .eq('id', design.id);
-
         if (updateError) {
           console.error('Error updating download count:', updateError);
           // Provide more specific error messages
@@ -322,16 +309,12 @@ export default function DesignDetail() {
           } else {
             alert('Failed to update download count');
           }
+          throw updateError;
         }
       }
-    } catch (err) {
-      console.error('Error updating download count:', err);
-      // Provide more specific error messages
-      if (err instanceof Error) {
-        alert(err.message || 'Failed to update download count');
-      } else {
-        alert('Failed to update download count');
-      }
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      setError('Failed to download file. Please try again later.');
     }
   };
 
