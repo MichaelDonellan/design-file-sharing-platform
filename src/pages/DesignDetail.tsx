@@ -581,4 +581,3 @@ alert(`Failed to download design: ${err && err.message ? err.message : JSON.stri
     </div>
   );
 }
-// End of file - forced update to resolve Netlify build error
