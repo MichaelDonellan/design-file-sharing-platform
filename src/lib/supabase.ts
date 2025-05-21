@@ -95,9 +95,19 @@ export async function uploadFile(file: File, path: string) {
 
 // Helper function to get a public URL for a file
 export function getPublicUrl(path: string) {
-  const { data } = supabase.storage
-    .from('designs')
-    .getPublicUrl(path);
-  
-  return data.publicUrl;
+  try {
+    const { data, error } = supabase.storage
+      .from('designs')
+      .getPublicUrl(path);
+
+    if (error) {
+      console.error('Error getting public URL:', error);
+      return { data: { publicUrl: null }, error };
+    }
+    
+    return { data, error: null };
+  } catch (err) {
+    console.error('Error in getPublicUrl:', err);
+    return { data: { publicUrl: null }, error: err };
+  }
 }

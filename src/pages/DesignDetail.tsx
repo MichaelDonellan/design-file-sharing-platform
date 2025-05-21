@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, getPublicUrl } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import type { Design, Store, Review, DesignMockup, DesignFile } from '../types';
 import { Download, Calendar, Tag, Store as StoreIcon, Star, ShoppingCart, Heart, Share2, Eye } from 'lucide-react';
@@ -247,17 +247,47 @@ export default function DesignDetail() {
         throw new Error('No file path available');
       }
 
+      // Extract the filename from the file path
+      const filePath = mainFile.file_path;
+      const fileName = filePath.split('/').pop() || design.name;
+
+      // First try to get a public URL
+      const { data: publicUrlData } = getPublicUrl(filePath);
+
+      if (publicUrlData?.publicUrl) {
+        // If we have a public URL, use it directly
+        window.open(publicUrlData.publicUrl, '_blank');
+        // Increment download count
+        const { error: updateError } = await supabase
+          .from('designs')
+          .update({ downloads: (design.downloads || 0) + 1 })
+          .eq('id', design.id);
+
+        if (updateError) throw updateError;
+        return;
+      }
+
+      // If no public URL, try direct download
       const { data, error } = await supabase.storage
         .from('designs')
-        .download(mainFile.file_path);
+        .download(filePath);
 
-      if (error) throw error;
+      if (error) {
+        // Handle specific storage errors
+        if (error.message.includes('not found')) {
+          throw new Error('File not found in storage');
+        }
+        if (error.message.includes('permission')) {
+          throw new Error('Insufficient permissions to access file');
+        }
+        throw error;
+      }
 
       // Create a download link and trigger it
       const url = URL.createObjectURL(data);
       const link = document.createElement('a');
       link.href = url;
-      link.download = design.name;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -272,7 +302,12 @@ export default function DesignDetail() {
       if (updateError) throw updateError;
     } catch (err) {
       console.error('Error downloading design:', err);
-      alert('Failed to download design');
+      // Provide more specific error messages
+      if (err instanceof Error) {
+        alert(err.message || 'Failed to download design');
+      } else {
+        alert('Failed to download design');
+      }
     }
   };
 
