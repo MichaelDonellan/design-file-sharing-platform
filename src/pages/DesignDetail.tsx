@@ -257,6 +257,52 @@ export default function DesignDetail() {
       if (publicUrlData?.publicUrl) {
         // If we have a public URL, use it directly
         window.open(publicUrlData.publicUrl, '_blank');
+        return;
+      }
+
+      // If no public URL, try to get the file directly
+      try {
+        // Try with the stored path
+        const { data: fileData, error: fileError } = await supabase.storage
+          .from('designs')
+          .download(filePath);
+
+        if (fileError) {
+          // If that fails, try with the old path format
+          const oldPath = filePath.replace(/^files\//, '');
+          const { data: oldData, error: oldError } = await supabase.storage
+            .from('designs')
+            .download(oldPath);
+
+          if (oldError) {
+            throw new Error(`Failed to find file at both paths: ${filePath} and ${oldPath}`);
+          }
+          
+          // Create a blob URL from the file data
+          const blob = new Blob([oldData], { type: 'application/octet-stream' });
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          return;
+        }
+
+        // Create a blob URL from the file data
+        const blob = new Blob([fileData], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        
+        // Increment download count
+        if (design) {
+          const { error: updateError } = await supabase
+            .from('designs')
+            .update({ downloads: (design.downloads || 0) + 1 })
+            .eq('id', design.id);
+
+          if (updateError) throw updateError;
+        }
+      } catch (err) {
+        console.error('Error downloading file:', err);
+        throw new Error('Failed to download file. Please try again later.');
+      }
         // Increment download count
         const { error: updateError } = await supabase
           .from('designs')
