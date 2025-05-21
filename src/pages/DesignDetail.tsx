@@ -242,10 +242,10 @@ export default function DesignDetail() {
         throw new Error('No file path available');
       }
 
-      // Extract the filename from the file path
+      // Extract components from the file path
       const filePath = mainFile.file_path;
-      const fileName = filePath.split('/').pop() || design.name;
-
+      const originalFileName = filePath.split('/').pop() || design.name;
+      
       // Try direct download from the stored path
       const { data: fileData, error: downloadError } = await supabase.storage
         .from('designs')
@@ -253,23 +253,33 @@ export default function DesignDetail() {
 
       if (downloadError) {
         // Try with the user ID prefix format
-        const parts = filePath.split('/');
-        const fileName = parts.pop();
-        const userId = parts[0];
-        const newPath = `${userId}/${fileName}`;
+        const pathComponents = filePath.split('/');
+        const storedFileName = pathComponents.pop();
+        if (!storedFileName) {
+          throw new Error(`Invalid file path format: ${filePath}`);
+        }
+        
+        // Get the user ID from the path
+        const userId = pathComponents[0];
+        if (!userId) {
+          throw new Error(`Invalid file path format: ${filePath}`);
+        }
+        
+        // Try downloading from the user ID prefixed path
+        const userPrefixedPath = `${userId}/${storedFileName}`;
         const { data: newData, error: newError } = await supabase.storage
           .from('designs')
-          .download(newPath);
+          .download(userPrefixedPath);
 
         if (newError) {
-          throw new Error(`Failed to access file at paths: ${filePath} and ${newPath}`);
+          throw new Error(`Failed to access file at paths: ${filePath} and ${userPrefixedPath}`);
         }
         
         const blob = new Blob([newData], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = fileName;
+        link.download = originalFileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
