@@ -224,22 +224,17 @@ export default function DesignDetail() {
   };
 
   const handleDownload = async () => {
-    if (!design || !files.length) return;
-
+    if (!design || !files.length) {
+      setError('No files available for download');
+      return;
+    }
+    
     // Always require login before download/purchase
     if (!user) {
       navigate('/login');
       return;
     }
 
-    if (design.price && user) {
-      // Handle purchase/download logic here
-      // This would typically involve payment processing
-      alert('Purchase functionality coming soon!');
-      return;
-    }
-
-    // For free designs, proceed with download
     try {
       // Get the first file from the files array
       const mainFile = files[0];
@@ -251,70 +246,51 @@ export default function DesignDetail() {
       const filePath = mainFile.file_path;
       const fileName = filePath.split('/').pop() || design.name;
 
-      // First try to get a public URL
-      const { data: publicUrlData } = getPublicUrl(filePath);
+      // Try direct download from the stored path
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from('designs')
+        .download(filePath);
 
-      if (publicUrlData?.publicUrl) {
-        // If we have a public URL, use it directly
-        window.open(publicUrlData.publicUrl, '_blank');
-        return;
-      }
-
-      // If no public URL, try to get the file directly
-      try {
-        // Try with the stored path
-        const { data: fileData, error: fileError } = await supabase.storage
+      if (downloadError) {
+        // If that fails, try with the old path format
+        const oldPath = filePath.replace(/^files\//, '');
+        const { data: oldData, error: oldError } = await supabase.storage
           .from('designs')
-          .download(filePath);
+          .download(oldPath);
 
-        if (fileError) {
-          // If that fails, try with the old path format
-          const oldPath = filePath.replace(/^files\//, '');
-          const { data: oldData, error: oldError } = await supabase.storage
-            .from('designs')
-            .download(oldPath);
-
-          if (oldError) {
-            throw new Error(`Failed to find file at both paths: ${filePath} and ${oldPath}`);
+        if (oldError) {
+          // If both paths fail, try to get a public URL
+          const { publicUrl: publicUrlData, error: urlError } = getPublicUrl(filePath);
+          if (urlError || !publicUrlData) {
+            throw new Error(`Failed to access file at paths: ${filePath} and ${oldPath}`);
           }
           
-          // Create a blob URL from the file data
-          const blob = new Blob([oldData], { type: 'application/octet-stream' });
-          const url = URL.createObjectURL(blob);
-          window.open(url, '_blank');
+          // If we have a public URL, use it
+          window.open(publicUrlData, '_blank');
           return;
         }
 
-        // Create a blob URL from the file data
-        const blob = new Blob([fileData], { type: 'application/octet-stream' });
+        // Create a blob URL from the old path data
+        const blob = new Blob([oldData], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank');
-        
-        // Increment download count
-        if (design) {
-          const { error: updateError } = await supabase
-            .from('designs')
-            .update({ downloads: (design.downloads || 0) + 1 })
-            .eq('id', design.id);
-
-          if (updateError) throw updateError;
-        }
-      } catch (err) {
-        console.error('Error downloading file:', err);
-        throw new Error('Failed to download file. Please try again later.');
+        return;
       }
-        // Increment download count
+
+      // Create a blob URL from the file data
+      const blob = new Blob([fileData], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      
+      // Increment download count if design exists
+      if (design) {
         const { error: updateError } = await supabase
           .from('designs')
           .update({ downloads: (design.downloads || 0) + 1 })
           .eq('id', design.id);
 
         if (updateError) throw updateError;
-        return;
       }
-
-      // If no public URL, try direct download
-      const { data, error } = await supabase.storage
         .from('designs')
         .download(filePath);
 
