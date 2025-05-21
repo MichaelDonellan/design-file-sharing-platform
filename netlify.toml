@@ -18,11 +18,14 @@
     Content-Type = "application/javascript"
 
 [build]
-  command = "npm install && npm run build"
+  command = "yarn install && yarn build"
   publish = "dist"
-  environment = { NODE_VERSION = "18" }
+  environment = {
+    NODE_VERSION = "18",
+    NODE_ENV = "production"
+  }
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200 
+  status = 200
