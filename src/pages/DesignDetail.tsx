@@ -236,38 +236,68 @@ export default function DesignDetail() {
   };
 
   const handleDownload = async () => {
-    if (!design) return;
+    console.log('Starting download process...');
+    console.log('Design data:', design);
+    console.log('Files available:', files);
+    
+    if (!design) {
+      console.error('No design data available');
+      return;
+    }
     
     // Check if the user can download (free design or has purchased)
     if (design.price && design.price > 0 && !hasPurchased) {
       alert('Please purchase this design to download it.');
+      console.log('Download blocked - paid item not purchased');
       return;
     }
     
     try {
       // Select the first file (could be enhanced to allow selection)
       const file = files[0];
+      console.log('Selected file for download:', file);
+      
       if (!file) {
+        console.error('No files available for this design');
         alert('No files available for download.');
         return;
       }
       
       const filePath = file.storage_path;
       const fileName = file.original_name || 'design-file';
+      console.log('File path:', filePath);
+      console.log('File name:', fileName);
       
       // Check if file exists in storage
       if (!filePath) {
-        alert('File path not found.');
+        console.error('storage_path is null or empty in the database record');
+        alert('File path not found. Debug info has been logged to console.');
         return;
       } else {
-        // Verify file exists in storage
-        const { data: listData } = await supabase.storage
-          .from('designs')
-          .list(filePath.split('/').slice(0, -1).join('/'));
+        // Calculate directory path by removing the filename
+        const dirPath = filePath.split('/').slice(0, -1).join('/');
+        console.log('Directory to list:', dirPath || '(root)');
         
-        const found = listData?.some(item => item.name === filePath.split('/').pop());
-        console.log('File existence check:', found, listData);
+        // Verify file exists in storage
+        const { data: listData, error: listError } = await supabase.storage
+          .from('designs')
+          .list(dirPath);
+        
+        if (listError) {
+          console.error('Error listing directory contents:', listError);
+          alert(`Error checking file existence: ${listError.message}`);
+          return;
+        }
+        
+        console.log('Files in directory:', listData);
+        const filename = filePath.split('/').pop();
+        console.log('Looking for filename:', filename);
+        
+        const found = listData?.some(item => item.name === filename);
+        console.log('File existence check result:', found);
+        
         if (!found) {
+          console.error('File not found in storage bucket');
           alert('File does not exist in storage. Please contact support.');
           return;
         }
