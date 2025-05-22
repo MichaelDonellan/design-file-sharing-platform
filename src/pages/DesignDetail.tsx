@@ -241,8 +241,6 @@ export default function DesignDetail() {
 
   const handleDownload = async () => {
     console.log('Starting download process...');
-    console.log('Design data:', design);
-    console.log('Files available:', files);
     
     if (!design) {
       console.error('No design data available');
@@ -257,9 +255,8 @@ export default function DesignDetail() {
     }
     
     try {
-      // Select the first file (could be enhanced to allow selection)
+      // Select the first file
       const file = files[0];
-      console.log('Selected file for download:', file);
       
       if (!file) {
         console.error('No files available for this design');
@@ -269,121 +266,36 @@ export default function DesignDetail() {
       
       const filePath = file.storage_path;
       const fileName = file.original_name || 'design-file';
-      console.log('File path:', filePath);
-      console.log('File name:', fileName);
       
-      // Verify that storage_path exists
+      // Verify storage_path exists
       if (!filePath) {
         console.error('storage_path is null or empty in the database record');
-        alert('This design file is not properly configured for download. Please contact support.');
+        alert('Download is not available — missing file path.');
         return;
       }
       
-      // MAIN DOWNLOAD PATH - for properly configured storage paths
-      try {
-        console.log('Attempting to download from Supabase storage:', filePath);
-        
-        // Check if file exists in storage by listing the directory
-        const dirPath = filePath.split('/').slice(0, -1).join('/');
-        const filename = filePath.split('/').pop();
-        console.log('Directory to check:', dirPath, 'Filename:', filename);
-        
-        const { data: listData, error: listError } = await supabase.storage
-          .from('designs')
-          .list(dirPath);
-        
-        if (listError) {
-          console.error('Error listing directory contents:', listError);
-          throw new Error(`Error checking file existence: ${listError.message}`);
-        }
-        
-        console.log('Files in directory:', listData);
-        const fileExists = listData?.some(item => item.name === filename);
-        console.log('File exists in storage:', fileExists);
-        
-        if (!fileExists) {
-          throw new Error('File not found in storage');
-        }
-        
-        // Download the file
-        const { data: fileData, error: downloadError } = await supabase.storage
-          .from('designs')
-          .download(filePath);
-        
-        if (downloadError) {
-          console.error('Download error:', downloadError);
-          throw new Error(`Failed to download file: ${downloadError.message}`);
-        }
-        
-        if (!fileData) {
-          throw new Error('No file data received');
-        }
-        
-        // Create download link
-        const url = URL.createObjectURL(fileData);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        console.log('Download completed successfully');
-      } catch (storageError) {
-        console.error('Error downloading from storage:', storageError);
-        alert(`Error downloading file: ${storageError.message || 'Unknown error'}. Please try again later.`);
-        return;
-      }
-      
-      // Calculate directory path by removing the filename
-      const dirPath = filePath.split('/').slice(0, -1).join('/');
-      console.log('Directory to list:', dirPath || '(root)');
-      
-      // Verify file exists in storage
-      const { data: listData, error: listError } = await supabase.storage
-        .from('designs')
-        .list(dirPath);
-      
-      if (listError) {
-        console.error('Error listing directory contents:', listError);
-        alert(`Error checking file existence: ${listError.message}`);
-        return;
-      }
-      
-      console.log('Files in directory:', listData);
-      const filename = filePath.split('/').pop();
-      console.log('Looking for filename:', filename);
-      
-      const found = listData?.some(item => item.name === filename);
-      console.log('File existence check result:', found);
-      
-      if (!found) {
-        console.error('File not found in storage bucket');
-        alert('File does not exist in storage. Please contact support.');
-        return;
-      }
-      
-      // Download the file
+      // Download the file from Supabase storage
       const { data, error } = await supabase.storage
         .from('designs')
         .download(filePath);
       
       if (error) {
-        console.error('Supabase download error:', error, { filePath });
-        alert(`Failed to download design: ${error.message || (error as any).error || JSON.stringify(error)}`);
+        console.error('Download error:', error.message);
+        alert('Error downloading the file.');
         return;
       }
       
-      // Create a download link and trigger it
+      // Create download link
       const url = URL.createObjectURL(data);
       const link = document.createElement('a');
       link.href = url;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
       URL.revokeObjectURL(url);
+      
+      console.log('Download completed successfully');
       
       // Increment download count
       const { error: updateError } = await supabase
@@ -396,7 +308,7 @@ export default function DesignDetail() {
       }
     } catch (err) {
       console.error('Error downloading design:', err);
-      alert(`Failed to download design: ${err && err.message ? err.message : JSON.stringify(err)}`);
+      alert(`Failed to download design: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
