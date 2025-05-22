@@ -26,7 +26,6 @@ const EXCHANGE_RATES: Record<string, number> = {
 };
 
 export default function DesignDetail() {
-
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -65,7 +64,6 @@ export default function DesignDetail() {
     alert('Purchase functionality coming soon!');
   };
 
- 
   useEffect(() => {
     if (id) {
       fetchDesign();
@@ -146,33 +144,17 @@ export default function DesignDetail() {
         // Fetch reviews - Modified query to not use foreign key relationship
         const { data: reviewsData } = await supabase
           .from('reviews')
-          .select('*')
+          .select('*, user:user_id(*)')
           .eq('design_id', id)
           .order('created_at', { ascending: false });
 
         if (reviewsData) {
-          // Fetch user data separately for each review
-          const reviewsWithUsers = await Promise.all(
-            reviewsData.map(async (review) => {
-              const { data: userData } = await supabase
-                .from('auth.users')
-                .select('id, email')
-                .eq('id', review.user_id)
-                .single();
-              
-              return {
-                ...review,
-                user: userData
-              };
-            })
-          );
-          
-          setReviews(reviewsWithUsers);
+          setReviews(reviewsData);
         }
       }
-    } catch (err) {
-      console.error('Error fetching design:', err);
-      setError('Failed to load design');
+    } catch (error) {
+      console.error('Error fetching design:', error);
+      setError('Failed to load design details.');
     } finally {
       setLoading(false);
     }
@@ -180,162 +162,151 @@ export default function DesignDetail() {
 
   const incrementView = async () => {
     try {
-      const { error } = await supabase.rpc('increment_design_views', {
-        design_id: id
-      });
-      if (error) throw error;
+      if (id) {
+        await supabase.rpc('increment_view', { design_id: id });
+      }
     } catch (err) {
-      console.error('Error incrementing view:', err);
+      console.error('Error incrementing view count:', err);
     }
   };
 
-  useEffect(() => {
-    const stored = localStorage.getItem('preferredCurrency');
-    if (stored && EXCHANGE_RATES[stored]) {
-      setCurrency(stored);
-      return;
-    }
-    fetch('https://ipapi.co/json/')
-      .then(res => res.json())
-      .then(data => {
-        const countryToCurrency: Record<string, string> = {
-          US: 'USD', GB: 'GBP', AU: 'AUD', CA: 'CAD', EU: 'EUR', FR: 'EUR', DE: 'EUR', IT: 'EUR', ES: 'EUR', NL: 'EUR', BE: 'EUR', AT: 'EUR', IE: 'EUR', PT: 'EUR', FI: 'EUR', GR: 'EUR',
-        };
-        if (data.country && countryToCurrency[data.country] && EXCHANGE_RATES[countryToCurrency[data.country]]) {
-          setCurrency(countryToCurrency[data.country]);
-          localStorage.setItem('preferredCurrency', countryToCurrency[data.country]);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const getCurrencySymbol = (code: string) => {
+    const currency = SUPPORTED_CURRENCIES.find(c => c.code === code);
+    return currency ? currency.symbol : '$';
+  };
 
   const toggleFavorite = async () => {
     if (!user) {
-      navigate('/login');
+      alert('Please log in to favorite designs.');
       return;
     }
 
+    if (isProcessing) return;
+
     try {
       setIsProcessing(true);
+      
       if (isFavorited) {
-        // Remove from favorites
+        // Remove favorite
         const { error } = await supabase
           .from('design_favorites')
           .delete()
           .eq('design_id', id)
           .eq('user_id', user.id);
-
+        
         if (error) throw error;
         setIsFavorited(false);
+        
+        // Update count
+        if (design) {
+          const { error: updateError } = await supabase
+            .from('designs')
+            .update({ favorites: (design.favorites || 0) - 1 })
+            .eq('id', design.id);
+          
+          if (updateError) throw updateError;
+          setDesign({ ...design, favorites: (design.favorites || 0) - 1 });
+        }
       } else {
-        // Add to favorites
+        // Add favorite
         const { error } = await supabase
           .from('design_favorites')
-          .insert({
-            design_id: id,
-            user_id: user.id
-          });
-
+          .insert({ design_id: id, user_id: user.id });
+        
         if (error) throw error;
         setIsFavorited(true);
+        
+        // Update count
+        if (design) {
+          const { error: updateError } = await supabase
+            .from('designs')
+            .update({ favorites: (design.favorites || 0) + 1 })
+            .eq('id', design.id);
+          
+          if (updateError) throw updateError;
+          setDesign({ ...design, favorites: (design.favorites || 0) + 1 });
+        }
       }
     } catch (err) {
       console.error('Error toggling favorite:', err);
-      alert('Failed to update favorite status');
+      alert('Failed to update favorite status.');
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleDownload = async () => {
-    if (!design || !files.length) {
-      console.warn('Download aborted: missing design or files', { design, files });
-      alert('No design or files available for download.');
+    if (!design) return;
+    
+    // Check if the user can download (free design or has purchased)
+    if (design.price && design.price > 0 && !hasPurchased) {
+      alert('Please purchase this design to download it.');
       return;
     }
-
-// Always require login before download/purchase
-if (!user) {
-console.warn('Download aborted: user not logged in');
-navigate('/login');
-return;
-}
-
-if (design.price && user) {
-// Handle purchase/download logic here
-alert('Purchase functionality coming soon!');
-return;
-}
-
-// For free designs, proceed with download
-try {
-// Get the first file from the files array
-const mainFile = files[0];
-if (!mainFile?.file_path) {
-console.error('No file path available in mainFile:', mainFile);
-alert('No file path available for this design.');
-return;
-}
-
-// Extract the filename from the file path
-const filePath = mainFile.file_path;
-const fileName = filePath.split('/').pop() || design.name;
-
-// Debug logs
-console.log('Download attempt:', { filePath, user, files, design });
-
-// Check if file exists in storage before download
-const pathParts = filePath.split('/');
-const fileParent = pathParts.slice(0, -1).join('/');
-const fileBase = pathParts[pathParts.length - 1];
-console.log('Checking existence in bucket:', { fileParent, fileBase });
-const { data: listData, error: listError } = await supabase.storage.from('designs').list(fileParent || undefined);
-if (listError) {
-console.error('Error listing files in storage:', listError);
-} else {
-const found = listData && listData.some(f => f.name === fileBase);
-console.log('File existence check:', found, listData);
-if (!found) {
-alert('File does not exist in storage. Please contact support.');
-return;
-}
-}
-
-// Download the file
-const { data, error } = await supabase.storage
-.from('designs')
-.download(filePath);
-
-if (error) {
-console.error('Supabase download error:', error, { filePath });
-alert(`Failed to download design: ${error.message || error.error || JSON.stringify(error)}`);
-return;
-}
-
-// Create a download link and trigger it
-const url = URL.createObjectURL(data);
-const link = document.createElement('a');
-link.href = url;
-link.download = fileName;
-document.body.appendChild(link);
-link.click();
-document.body.removeChild(link);
-URL.revokeObjectURL(url);
-
-// Increment download count
-const { error: updateError } = await supabase
-.from('designs')
-.update({ downloads: (design.downloads || 0) + 1 })
-.eq('id', design.id);
-
-if (updateError) {
-console.error('Error updating download count:', updateError);
-}
-} catch (err) {
-console.error('Error downloading design:', err);
-alert(`Failed to download design: ${err && err.message ? err.message : JSON.stringify(err)}`);
-}
-};
+    
+    try {
+      // Select the first file (could be enhanced to allow selection)
+      const file = files[0];
+      if (!file) {
+        alert('No files available for download.');
+        return;
+      }
+      
+      const filePath = file.storage_path;
+      const fileName = file.original_name || 'design-file';
+      
+      // Check if file exists in storage
+      if (!filePath) {
+        alert('File path not found.');
+        return;
+      } else {
+        // Verify file exists in storage
+        const { data: listData } = await supabase.storage
+          .from('designs')
+          .list(filePath.split('/').slice(0, -1).join('/'));
+        
+        const found = listData?.some(item => item.name === filePath.split('/').pop());
+        console.log('File existence check:', found, listData);
+        if (!found) {
+          alert('File does not exist in storage. Please contact support.');
+          return;
+        }
+      }
+      
+      // Download the file
+      const { data, error } = await supabase.storage
+        .from('designs')
+        .download(filePath);
+      
+      if (error) {
+        console.error('Supabase download error:', error, { filePath });
+        alert(`Failed to download design: ${error.message || error.error || JSON.stringify(error)}`);
+        return;
+      }
+      
+      // Create a download link and trigger it
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      // Increment download count
+      const { error: updateError } = await supabase
+        .from('designs')
+        .update({ downloads: (design.downloads || 0) + 1 })
+        .eq('id', design.id);
+      
+      if (updateError) {
+        console.error('Error updating download count:', updateError);
+      }
+    } catch (err) {
+      console.error('Error downloading design:', err);
+      alert(`Failed to download design: ${err && err.message ? err.message : JSON.stringify(err)}`);
+    }
   };
 
   const convertPrice = (usd: number, to: string) => {
@@ -343,15 +314,16 @@ alert(`Failed to download design: ${err && err.message ? err.message : JSON.stri
     return Math.round((usd * EXCHANGE_RATES[to]) * 100) / 100;
   };
 
-  let content;
   if (loading) {
-    content = (
+    return (
       <div className="flex justify-center items-center h-64">
         <div className="text-gray-600">Loading design...</div>
       </div>
     );
-  } else if (error || !design) {
-    content = (
+  }
+
+  if (error || !design) {
+    return (
       <div className="text-center py-12">
         <div className="text-red-600 mb-4">{error || 'Design not found'}</div>
         <button 
@@ -362,8 +334,9 @@ alert(`Failed to download design: ${err && err.message ? err.message : JSON.stri
         </button>
       </div>
     );
-  } else {
-    content = (
+  }
+
+  return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="relative">
@@ -423,7 +396,7 @@ alert(`Failed to download design: ${err && err.message ? err.message : JSON.stri
             </span>
             </div>
           </div>
-          
+
           <div className="mb-8">
             <ImageCarousel mockups={mockups} />
           </div>
@@ -515,26 +488,25 @@ alert(`Failed to download design: ${err && err.message ? err.message : JSON.stri
                 <span>{isFavorited ? 'Favorited' : 'Favorite'}</span>
               </button>
               {/* Download button logic: show if free, or if user has purchased */}
-{/* Download button logic: show if free, or if user has purchased */}
-{(design.price === null || design.price === 0 || hasPurchased) && (
-  <button
-    onClick={handleDownload}
-    className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-  >
-    <Download className="w-5 h-5" />
-    <span>Download</span>
-  </button>
-)}
-{/* Show Buy button if not purchased and paid product */}
-{design.price && design.price > 0 && !hasPurchased && (
-  <button
-    onClick={handlePurchase}
-    className="flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
-  >
-    <ShoppingCart className="w-5 h-5" />
-    <span>{`Buy for $${design.price}`}</span>
-  </button>
-)}
+              {(design.price === null || design.price === 0 || hasPurchased) && (
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                >
+                  <Download className="w-5 h-5" />
+                  <span>Download</span>
+                </button>
+              )}
+              {/* Show Buy button if not purchased and paid product */}
+              {design.price && design.price > 0 && !hasPurchased && (
+                <button
+                  onClick={handlePurchase}
+                  className="flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  <span>{`Buy for $${design.price}`}</span>
+                </button>
+              )}
               <button
                 onClick={() => {
                   navigator.share({
@@ -578,7 +550,4 @@ alert(`Failed to download design: ${err && err.message ? err.message : JSON.stri
       </div>
     </div>
   );
-  }
-  
-  return content;
 }
