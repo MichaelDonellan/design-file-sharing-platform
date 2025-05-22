@@ -14,7 +14,11 @@ export default defineConfig(({ mode }) => {
         'react-hot-toast',
         'react-router-dom',
         'swiper',
-        '@headlessui/react'
+        '@headlessui/react',
+        // Ensure sub-imports are also included
+        'react-router-dom/client',
+        'react-router-dom/server',
+        'react-router-dom/dist/index'
       ]
     },
     preview: {
