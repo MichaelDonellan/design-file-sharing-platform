@@ -4,7 +4,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import ImageCarousel from '../components/ImageCarousel';
-import { Eye, Download, Heart, ShoppingCart, Tag, Store as StoreIcon, Calendar } from 'lucide-react';
+import { Eye, Download, Heart, ShoppingCart, Tag, Store as StoreIcon, Calendar, Share2 } from 'lucide-react';
 import EXCHANGE_RATES from '../lib/exchange-rates';
 import { getCurrencySymbol } from '../lib/currency';
 import ReviewForm from '../components/ReviewForm';
