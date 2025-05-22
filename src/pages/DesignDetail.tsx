@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import React from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import type { Design, Store, Review, DesignMockup, DesignFile } from '../types';
-import { Download, Calendar, Tag, Store as StoreIcon, Star, ShoppingCart, Heart, Share2, Eye } from 'lucide-react';
-import { format } from 'date-fns';
+import { supabase } from '../lib/supabase';
 import ImageCarousel from '../components/ImageCarousel';
+import { Eye, Download, Heart, ShoppingCart, Tag, Store as StoreIcon } from 'lucide-react';
+import EXCHANGE_RATES from '../lib/exchange-rates';
+import { getCurrencySymbol } from '../lib/currency';
 import ReviewForm from '../components/ReviewForm';
 import ReviewsList from '../components/ReviewsList';
-import { toast } from 'react-hot-toast';
+import type { Design, Store, Review, DesignMockup, DesignFile } from '../types';
+import { format } from 'date-fns';
 
 const SUPPORTED_CURRENCIES = [
   { code: 'USD', symbol: '$', name: 'US Dollar' },
@@ -25,72 +27,7 @@ const EXCHANGE_RATES: Record<string, number> = {
   AUD: 1.52,
 };
 
-/**
- * Helper function to create and download a temporary ZIP file with design assets
- * Used when proper storage paths are not configured
- */
-async function createAndDownloadTempZip(design: any) {
-  try {
-    // Dynamically import JSZip library
-    const { default: JSZip } = await import('jszip');
-    
-    // Create a new zip file
-    const zip = new JSZip();
-    
-    // Add a readme file with design information
-    const designInfo = JSON.stringify(design, null, 2);
-    const readmeContent = `Design: ${design.name}\n\n` +
-                        `Category: ${design.category}\n` +
-                        `Created: ${new Date(design.created_at).toLocaleDateString()}\n\n` +
-                        `Description:\n${design.description || 'No description provided'}\n\n` +
-                        `Tags: ${design.tags ? design.tags.join(', ') : 'None'}\n\n` +
-                        `NOTE: This is a demonstration download. In production, this would contain the actual design files.`;
-    
-    zip.file('README.txt', readmeContent);
-    
-    // Try to fetch the thumbnail image and add it to the zip
-    if (design.thumbnail_url) {
-      try {
-        const imgResponse = await fetch(design.thumbnail_url);
-        if (imgResponse.ok) {
-          const imgBlob = await imgResponse.blob();
-          const imgExt = design.thumbnail_url.split('.').pop() || 'jpg';
-          zip.file(`thumbnail.${imgExt}`, imgBlob);
-        }
-      } catch (imgError) {
-        console.error('Error fetching thumbnail image:', imgError);
-        // Create a placeholder image file
-        zip.file('thumbnail-unavailable.txt', 'Image could not be included in this demo download.');
-      }
-    }
-    
-    // Add a sample design file (just a text placeholder)
-    zip.file(`${design.name.replace(/\s+/g, '-').toLowerCase()}.txt`, 
-             `This would be the actual design file in a production environment.\n\n` +
-             `For a real implementation, upload design files to your Supabase storage bucket\n` +
-             `and update the storage_path field in your database.`);
-    
-    // Generate the zip file
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
-    const url = URL.createObjectURL(zipBlob);
-    
-    // Create and trigger download
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${design.name.replace(/\s+/g, '-').toLowerCase()}-design-package.zip`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    console.log('Temporary ZIP package created and downloaded successfully');
-    return true;
-  } catch (zipError) {
-    console.error('Error creating zip file:', zipError);
-    alert('Could not create design package. Please try again later.');
-    return false;
-  }
-}
+// File download functionality now uses real files from Supabase storage
 
 export default function DesignDetail() {
   const { id } = useParams<{ id: string }>();
@@ -335,13 +272,10 @@ export default function DesignDetail() {
       console.log('File path:', filePath);
       console.log('File name:', fileName);
       
-      // Check if file exists in storage
+      // Verify that storage_path exists
       if (!filePath) {
         console.error('storage_path is null or empty in the database record');
-        console.log('Creating temporary design zip file for download demonstration');
-        
-        // TEMPORARY SOLUTION: Create a demo zip file for testing functionality
-        await createAndDownloadTempZip(design);
+        alert('This design file is not properly configured for download. Please contact support.');
         return;
       }
       
@@ -398,27 +332,7 @@ export default function DesignDetail() {
         console.log('Download completed successfully');
       } catch (storageError) {
         console.error('Error downloading from storage:', storageError);
-        
-        // Fallback to temp zip if real download fails
-        console.log('Falling back to temporary zip download');
-        alert('The original file could not be downloaded. Creating a package with available assets instead.');
-        
-        await createAndDownloadTempZip(design);
-        
-        // Increment download count despite using the fallback
-        try {
-          const { error: updateError } = await supabase
-            .from('designs')
-            .update({ downloads: (design.downloads || 0) + 1 })
-            .eq('id', design.id);
-          
-          if (updateError) {
-            console.error('Error updating download count:', updateError);
-          }
-        } catch (countErr) {
-          console.error('Error updating download count:', countErr);
-        }
-        
+        alert(`Error downloading file: ${storageError.message || 'Unknown error'}. Please try again later.`);
         return;
       }
       
