@@ -404,8 +404,6 @@ export default function DesignDetail() {
         alert('The original file could not be downloaded. Creating a package with available assets instead.');
         
         await createAndDownloadTempZip(design);
-        return;
-      }
         
         // Increment download count despite using the fallback
         try {
@@ -422,34 +420,34 @@ export default function DesignDetail() {
         }
         
         return;
-      } else {
-        // Calculate directory path by removing the filename
-        const dirPath = filePath.split('/').slice(0, -1).join('/');
-        console.log('Directory to list:', dirPath || '(root)');
-        
-        // Verify file exists in storage
-        const { data: listData, error: listError } = await supabase.storage
-          .from('designs')
-          .list(dirPath);
-        
-        if (listError) {
-          console.error('Error listing directory contents:', listError);
-          alert(`Error checking file existence: ${listError.message}`);
-          return;
-        }
-        
-        console.log('Files in directory:', listData);
-        const filename = filePath.split('/').pop();
-        console.log('Looking for filename:', filename);
-        
-        const found = listData?.some(item => item.name === filename);
-        console.log('File existence check result:', found);
-        
-        if (!found) {
-          console.error('File not found in storage bucket');
-          alert('File does not exist in storage. Please contact support.');
-          return;
-        }
+      }
+      
+      // Calculate directory path by removing the filename
+      const dirPath = filePath.split('/').slice(0, -1).join('/');
+      console.log('Directory to list:', dirPath || '(root)');
+      
+      // Verify file exists in storage
+      const { data: listData, error: listError } = await supabase.storage
+        .from('designs')
+        .list(dirPath);
+      
+      if (listError) {
+        console.error('Error listing directory contents:', listError);
+        alert(`Error checking file existence: ${listError.message}`);
+        return;
+      }
+      
+      console.log('Files in directory:', listData);
+      const filename = filePath.split('/').pop();
+      console.log('Looking for filename:', filename);
+      
+      const found = listData?.some(item => item.name === filename);
+      console.log('File existence check result:', found);
+      
+      if (!found) {
+        console.error('File not found in storage bucket');
+        alert('File does not exist in storage. Please contact support.');
+        return;
       }
       
       // Download the file
@@ -459,7 +457,7 @@ export default function DesignDetail() {
       
       if (error) {
         console.error('Supabase download error:', error, { filePath });
-        alert(`Failed to download design: ${error.message || error.error || JSON.stringify(error)}`);
+        alert(`Failed to download design: ${error.message || (error as any).error || JSON.stringify(error)}`);
         return;
       }
       
