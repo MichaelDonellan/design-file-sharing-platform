@@ -271,27 +271,68 @@ export default function DesignDetail() {
       // Check if file exists in storage
       if (!filePath) {
         console.error('storage_path is null or empty in the database record');
-        console.log('Creating temporary test file for download demonstration');
+        console.log('Creating temporary design zip file for download demonstration');
         
-        // TEMPORARY SOLUTION: Create a demo file for testing download functionality
-        // In production, you should upload actual files to Supabase and update storage_path
-        const designInfo = JSON.stringify(design, null, 2);
-        const fileContent = `This is a temporary test file for ${design.name}\n\n` +
-                           `Design information:\n${designInfo}\n\n` +
-                           `NOTE: This is a placeholder. In production, this would be an actual design file.`;
-        
-        // Create a blob with the content
-        const blob = new Blob([fileContent], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        
-        // Create and trigger download
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${design.name.replace(/\s+/g, '-').toLowerCase()}-demo.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        // TEMPORARY SOLUTION: Create a demo zip file for testing download functionality
+        // This requires the JSZip library to be loaded
+        import('jszip').then(async ({ default: JSZip }) => {
+          try {
+            // Create a new zip file
+            const zip = new JSZip();
+            
+            // Add a readme file with design information
+            const designInfo = JSON.stringify(design, null, 2);
+            const readmeContent = `Design: ${design.name}\n\n` +
+                                `Category: ${design.category}\n` +
+                                `Created: ${new Date(design.created_at).toLocaleDateString()}\n\n` +
+                                `Description:\n${design.description || 'No description provided'}\n\n` +
+                                `Tags: ${design.tags ? design.tags.join(', ') : 'None'}\n\n` +
+                                `NOTE: This is a demonstration download. In production, this would contain the actual design files.`;
+            
+            zip.file('README.txt', readmeContent);
+            
+            // Try to fetch the thumbnail image and add it to the zip
+            if (design.thumbnail_url) {
+              try {
+                const imgResponse = await fetch(design.thumbnail_url);
+                if (imgResponse.ok) {
+                  const imgBlob = await imgResponse.blob();
+                  const imgExt = design.thumbnail_url.split('.').pop() || 'jpg';
+                  zip.file(`thumbnail.${imgExt}`, imgBlob);
+                }
+              } catch (imgError) {
+                console.error('Error fetching thumbnail image:', imgError);
+                // Create a placeholder image file
+                zip.file('thumbnail-unavailable.txt', 'Image could not be included in this demo download.');
+              }
+            }
+            
+            // Add a sample design file (just a text placeholder)
+            zip.file(`${design.name.replace(/\s+/g, '-').toLowerCase()}.txt`, 
+                     `This would be the actual design file in a production environment.\n\n` +
+                     `For a real implementation, upload design files to your Supabase storage bucket\n` +
+                     `and update the storage_path field in your database.`);
+            
+            // Generate the zip file
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(zipBlob);
+            
+            // Create and trigger download
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${design.name.replace(/\s+/g, '-').toLowerCase()}-design-package.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          } catch (zipError) {
+            console.error('Error creating zip file:', zipError);
+            alert('Could not create design package. Please try again later.');
+          }
+        }).catch(err => {
+          console.error('Error loading JSZip library:', err);
+          alert('Could not load required libraries for download. Please try again later.');
+        });
         
         // Increment download count despite using the fallback
         try {
