@@ -1,12 +1,10 @@
-import React from 'react';
+// DesignDetail.tsx - Detail page for viewing design information
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import ImageCarousel from '../components/ImageCarousel';
 import { Eye, Download, Heart, ShoppingCart, Tag, Store as StoreIcon, Calendar, Share2 } from 'lucide-react';
-import EXCHANGE_RATES from '../lib/exchange-rates';
-import { getCurrencySymbol } from '../lib/currency';
 import ReviewForm from '../components/ReviewForm';
 import ReviewsList from '../components/ReviewsList';
 import type { Design, Store, Review, DesignMockup, DesignFile } from '../types';
@@ -40,8 +38,8 @@ export default function DesignDetail() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [relatedDesigns, setRelatedDesigns] = useState<Design[]>([]);
-  const [stripeLoading, setStripeLoading] = useState(false);
-  const [currency, setCurrency] = useState('USD');
+  // Using USD as default currency
+  const [currency] = useState('USD');
   const [isFavorited, setIsFavorited] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -64,8 +62,20 @@ export default function DesignDetail() {
   }, [user, id, design]);
 
   // Stub for purchase handler
+  // Handle purchase of paid designs
   const handlePurchase = () => {
-    alert('Purchase functionality coming soon!');
+    if (!user) {
+      alert('Please log in to purchase this design.');
+      navigate('/login', { state: { from: `/design/${id}` } });
+      return;
+    }
+    
+    if (!design?.price) {
+      alert('This design is free!');
+      return;
+    }
+    
+    alert(`Purchase functionality coming soon! This will charge $${design.price}.`);
   };
 
   useEffect(() => {
@@ -75,7 +85,8 @@ export default function DesignDetail() {
     }
   }, [id]);
 
-  const fetchDesign = async () => {
+  // Fetch design and related data from database
+const fetchDesign = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -124,25 +135,35 @@ export default function DesignDetail() {
         }
 
         // Fetch mockups
-        const { data: mockupsData } = await supabase
+        const { data: mockupData } = await supabase
           .from('design_mockups')
           .select('*')
           .eq('design_id', id)
-          .order('display_order');
+          .order('display_order', { ascending: true });
 
-        if (mockupsData) {
-          setMockups(mockupsData);
+        if (mockupData) {
+          // Map mockup_path to url for frontend display
+          const processedMockups = mockupData.map(mockup => ({
+            ...mockup,
+            url: mockup.mockup_path // Add url property based on mockup_path
+          }));
+          setMockups(processedMockups);
         }
 
         // Fetch files
-        const { data: filesData } = await supabase
+        const { data: fileData } = await supabase
           .from('design_files')
           .select('*')
           .eq('design_id', id)
-          .order('display_order');
+          .order('display_order', { ascending: true });
 
-        if (filesData) {
-          setFiles(filesData);
+        if (fileData) {
+          // Add url property for frontend display
+          const processedFiles = fileData.map(file => ({
+            ...file,
+            url: file.file_path // Add url property based on file_path
+          }));
+          setFiles(processedFiles);
         }
 
         // Fetch reviews - Modified query to not use foreign key relationship
@@ -179,6 +200,7 @@ export default function DesignDetail() {
     return currency ? currency.symbol : '$';
   };
 
+  // Toggle favorite status of design
   const toggleFavorite = async () => {
     if (!user) {
       alert('Please log in to favorite designs.');
@@ -189,7 +211,7 @@ export default function DesignDetail() {
 
     try {
       setIsProcessing(true);
-      
+
       if (isFavorited) {
         // Remove favorite
         const { error } = await supabase
@@ -197,17 +219,17 @@ export default function DesignDetail() {
           .delete()
           .eq('design_id', id)
           .eq('user_id', user.id);
-        
+
         if (error) throw error;
         setIsFavorited(false);
-        
+
         // Update count
         if (design) {
           const { error: updateError } = await supabase
             .from('designs')
             .update({ favorites: (design.favorites || 0) - 1 })
             .eq('id', design.id);
-          
+
           if (updateError) throw updateError;
           setDesign({ ...design, favorites: (design.favorites || 0) - 1 });
         }
@@ -216,17 +238,17 @@ export default function DesignDetail() {
         const { error } = await supabase
           .from('design_favorites')
           .insert({ design_id: id, user_id: user.id });
-        
+
         if (error) throw error;
         setIsFavorited(true);
-        
+
         // Update count
         if (design) {
           const { error: updateError } = await supabase
             .from('designs')
             .update({ favorites: (design.favorites || 0) + 1 })
             .eq('id', design.id);
-          
+
           if (updateError) throw updateError;
           setDesign({ ...design, favorites: (design.favorites || 0) + 1 });
         }
@@ -239,6 +261,7 @@ export default function DesignDetail() {
     }
   };
 
+  // Handle file download - Only available for free products or purchased products
   const handleDownload = async () => {
     console.log('Starting download process...');
     
@@ -255,24 +278,19 @@ export default function DesignDetail() {
     }
     
     try {
-      // Select the first file
-      const file = files[0];
-      
-      if (!file) {
-        console.error('No files available for this design');
-        alert('No files available for download.');
+      // Use the first file from the files array if available
+      if (files.length === 0) {
+        setError('No files available for download');
+        setIsProcessing(false);
         return;
       }
       
-      // Use file_path from our DesignFile interface
-      const filePath = file.file_path;
-      
       // Extract a filename from the file path since DesignFile doesn't have a name property
-      const pathParts = filePath.split('/');
+      const pathParts = files[0].file_path.split('/');
       const fileName = pathParts[pathParts.length - 1] || 'design-file';
       
       // Verify file_path exists
-      if (!filePath) {
+      if (!files[0].file_path) {
         console.error('file_path is null or empty in the database record');
         alert('Download is not available — missing file path.');
         return;
@@ -281,7 +299,7 @@ export default function DesignDetail() {
       // Download the file from Supabase storage
       const { data, error } = await supabase.storage
         .from('designs')
-        .download(filePath);
+        .download(files[0].file_path);
       
       if (error) {
         console.error('Download error:', error.message);
@@ -324,7 +342,7 @@ export default function DesignDetail() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-gray-600">Loading design...</div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
@@ -344,28 +362,133 @@ export default function DesignDetail() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="relative">
-          <img
-            src={design.thumbnail_url || '/placeholder.png'}
-            alt={design.name}
-            className="w-full h-96 object-cover"
-          />
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
-            <h1 className="text-3xl font-bold text-white mb-2">{design.name}</h1>
-            <div className="flex items-center space-x-4 text-white">
-              <div className="flex items-center">
-                <Eye className="w-5 h-5 mr-1" />
-                <span>{design.views || 0} views</span>
+    <div className="container mx-auto px-4 py-8">
+      <div>
+        <div className="mb-8">
+          {/* Hero section with image, gradient overlay and title */}
+          <div className="relative">
+            {mockups && mockups.length > 0 ? (
+              <img 
+                src={mockups[0].mockup_path} 
+                alt={design.name} 
+                className="w-full h-96 object-cover"
+              />
+            ) : (
+              <img 
+                src="/placeholder.png" 
+                alt={design.name} 
+                className="w-full h-96 object-cover"
+              />
+            )}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
+              <h1 className="text-3xl font-bold text-white mb-2">{design.name}</h1>
+              <div className="flex items-center space-x-4 text-white">
+                <div className="flex items-center">
+                  <Eye className="w-5 h-5 mr-1" aria-hidden="true" />
+                  <span>{design.views || 0} views</span>
+                </div>
+                <div className="flex items-center">
+                  <Heart className="w-5 h-5 mr-1" aria-hidden="true" />
+                  <span>{design.favorites || 0} favorites</span>
+                </div>
+                <div className="flex items-center">
+                  <Download className="w-5 h-5 mr-1" aria-hidden="true" />
+                  <span>{design.downloads || 0} downloads</span>
+                </div>
               </div>
-              <div className="flex items-center">
-                <Heart className="w-5 h-5 mr-1" />
-                <span>{design.favorites || 0} favorites</span>
+            </div>
+          </div>
+          
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
+              {mockups && mockups.length > 1 ? (
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold mb-4">Mockups</h2>
+                  <ImageCarousel images={mockups.map(m => m.mockup_path)} />
+                </div>
+              ) : null}
+            </div>
+            <div>
+              <div className="flex items-center mb-4">
+                <Link 
+                  to={`/store/${store?.id}`} 
+                  className="flex items-center text-blue-600 hover:underline"
+                >
+                  <StoreIcon className="w-5 h-5 mr-2" />
+                  <span>{store?.name || 'Unknown Store'}</span>
+                </Link>
               </div>
-              <div className="flex items-center">
-                <Download className="w-5 h-5 mr-1" />
-                <span>{design.downloads || 0} downloads</span>
+              
+              <div className="prose max-w-none mb-8">
+                <h2 className="text-xl font-semibold mb-2">Description</h2>
+                <p className="text-gray-700">
+                  {design.description || 'No description provided'}
+                </p>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 mb-6">
+                {design.tags?.map((tag) => (
+                  <span
+                    key={tag}
+                    className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              
+              <div className="flex space-x-4 mb-8">
+                <button
+                  onClick={toggleFavorite}
+                  disabled={isProcessing}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-md ${isFavorited
+                    ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
+                  <span>{isFavorited ? 'Favorited' : 'Favorite'}</span>
+                </button>
+                
+                {/* Download button logic: show if free, or if user has purchased */}
+                {(design.price === null || design.price === 0 || hasPurchased) && (
+                  <button
+                    onClick={handleDownload}
+                    className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                  >
+                    <Download className="w-5 h-5" />
+                    <span>Download</span>
+                  </button>
+                )}
+                
+                {/* Show Buy button if not purchased and paid product */}
+                {design.price && design.price > 0 && !hasPurchased && (
+                  <button
+                    onClick={handlePurchase}
+                    className="flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
+                  >
+                    <ShoppingCart className="w-5 h-5" />
+                    <span>{`Buy for $${design.price}`}</span>
+                  </button>
+                )}
+                
+                <button
+                  onClick={() => {
+                    navigator.share({
+                      title: design.name,
+                      text: design.description,
+                      url: window.location.href
+                    }).catch(() => {
+                      // Fallback for browsers that don't support Web Share API
+                      navigator.clipboard.writeText(window.location.href);
+                      alert('Link copied to clipboard!');
+                    });
+                  }}
+                  className="flex items-center space-x-2 bg-gray-100 text-gray-600 px-4 py-2 rounded-md hover:bg-gray-200"
+                >
+                  <Share2 className="w-5 h-5" />
+                  <span>Share</span>
+                </button>
               </div>
             </div>
           </div>
@@ -405,7 +528,12 @@ export default function DesignDetail() {
           </div>
 
           <div className="mb-8">
-            <ImageCarousel mockups={mockups} />
+            {mockups && mockups.length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold mb-4">Mockups</h2>
+                <ImageCarousel images={mockups.map(m => m.mockup_path)} />
+              </div>
+            )}
           </div>
 
           {store && (

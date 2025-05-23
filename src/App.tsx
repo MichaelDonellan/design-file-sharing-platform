@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import DesignDetail from './pages/DesignDetail';
+import DemoDesignDetail from './pages/DemoDesignDetail';
 import Upload from './pages/Upload';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -38,6 +39,7 @@ function App() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/demo-design" element={<DemoDesignDetail />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/categories" element={<Categories />} />
                 <Route path="/payment/success" element={<PaymentSuccess />} />
