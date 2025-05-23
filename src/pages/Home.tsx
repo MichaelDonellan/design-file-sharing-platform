@@ -235,11 +235,11 @@ const mockupMap = mockupsData.reduce((acc, mockup) => {
                 to={`/design/${design.id}`}
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
-                <div className="aspect-w-16 aspect-h-9">
+                <div className="aspect-w-16 aspect-h-16">
                   <img
                     src={designMockups[design.id] || '/placeholder.png'}
                     alt={design.name}
-                    className="w-full h-48 object-cover"
+                    className="w-full h-64 object-cover object-center"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = '/placeholder.png';
