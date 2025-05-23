@@ -4,11 +4,10 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase, getPublicUrl } from '../lib/supabase';
 import ImageCarousel from '../components/ImageCarousel';
-import { Eye, Download, Heart, ShoppingCart, Tag, Store as StoreIcon, Calendar, Share2 } from 'lucide-react';
+import { Eye, Download, Heart, ShoppingCart, Store as StoreIcon, Share2 } from 'lucide-react';
 import ReviewForm from '../components/ReviewForm';
 import ReviewsList from '../components/ReviewsList';
 import type { Design, Store, Review, DesignMockup, DesignFile } from '../types';
-import { format } from 'date-fns';
 
 const SUPPORTED_CURRENCIES = [
   { code: 'USD', symbol: '$', name: 'US Dollar' },
@@ -562,163 +561,31 @@ const fetchDesign = async () => {
         </div>
 
         <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-                <h1 className="text-2xl font-bold truncate max-w-full">{design.name}</h1>
-                {/* Price badge */}
-                <div className="mt-2 sm:mt-0">
-                  {design.price && design.price > 0 ? (
-                    <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
-                      {getCurrencySymbol(currency)}{convertPrice(design.price, currency).toFixed(2)}
-                    </span>
-                  ) : (
-                    <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
-                  )}
-                  </div>
+          {relatedDesigns.length > 0 && (
+            <div className="mt-4 mb-6">
+              <h3 className="text-lg font-semibold mb-3">More from this seller</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {relatedDesigns.map((related) => (
+                  <Link
+                    key={related.id}
+                    to={`/design/${related.id}`}
+                    className="block hover:opacity-90 transition-opacity"
+                  >
+                    <img
+                      src={related.mockup_path}
+                      alt={related.name}
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <p className="mt-2 text-sm font-medium truncate">
+                      {related.name}
+                    </p>
+                  </Link>
+                ))}
               </div>
-              {/* Tags below main info */}
-              {design.tags && design.tags.length > 0 && (
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {design.tags.map((tag) => (
-                    <span key={tag} className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">{tag}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex flex-col items-end gap-2">
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md flex items-center space-x-1">
-              <Tag size={16} />
-              <span>{design.category}</span>
-            </span>
-            </div>
-          </div>
-
-          {/* Store information section */}
-
-          {store && (
-            <div className="mb-6">
-              <div className="flex items-center space-x-2 text-gray-600">
-                <StoreIcon size={20} />
-                <span>Sold by</span>
-                <Link
-                  to={`/store/${store.name}`}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  {store.name}
-                </Link>
-              </div>
-
-              {relatedDesigns.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="text-lg font-semibold mb-3">More from this seller</h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    {relatedDesigns.map((related) => (
-                      <Link
-                        key={related.id}
-                        to={`/design/${related.id}`}
-                        className="block hover:opacity-90 transition-opacity"
-                      >
-                        <img
-                          src={related.mockup_path}
-                          alt={related.name}
-                          className="w-full h-32 object-cover rounded"
-                        />
-                        <p className="mt-2 text-sm font-medium truncate">
-                          {related.name}
-                        </p>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
-          <div className="flex items-center mb-6">
-            <div className="flex items-center space-x-4 text-gray-600">
-              <div className="flex items-center space-x-1">
-                <Calendar size={20} />
-                <span>{format(new Date(design.created_at), 'MMM d, yyyy')}</span>
-              </div>
-              <div className="flex items-center space-x-1 ml-4">
-                <Download size={20} />
-                <span>{design.downloads} downloads</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="prose max-w-none mb-8">
-            <h2 className="text-xl font-semibold mb-2">Description</h2>
-            <p className="text-gray-700">
-              {design.description || 'No description provided'}
-            </p>
-          </div>
-
-          <div className="mb-6">
-            <div className="flex flex-wrap gap-2 mb-4">
-              {design.tags?.map((tag) => (
-                <span
-                  key={tag}
-                  className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            
-            {/* Action buttons row */}
-            <div className="flex space-x-4 mt-6">
-              <button
-                onClick={toggleFavorite}
-                disabled={isProcessing}
-                className="flex items-center space-x-2 px-4 py-2 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200"
-              >
-                <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current text-red-500' : ''}`} />
-                <span>Favorite</span>
-              </button>
-              
-              {/* Download button logic: show if free, or if user has purchased */}
-              {(design.price === null || design.price === 0 || hasPurchased) && (
-                <button
-                  onClick={handleDownload}
-                  className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-                >
-                  <Download className="w-5 h-5" />
-                  <span>Download</span>
-                </button>
-              )}
-              
-              {/* Show Buy button if not purchased and paid product */}
-              {design.price && design.price > 0 && !hasPurchased && (
-                <button
-                  onClick={handlePurchase}
-                  className="flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
-                >
-                  <ShoppingCart className="w-5 h-5" />
-                  <span>{`Buy for $${design.price}`}</span>
-                </button>
-              )}
-              
-              <button
-                onClick={() => {
-                  navigator.share({
-                    title: design.name,
-                    text: design.description,
-                    url: window.location.href
-                  }).catch(() => {
-                    // Fallback for browsers that don't support Web Share API
-                    navigator.clipboard.writeText(window.location.href);
-                    alert('Link copied to clipboard!');
-                  });
-                }}
-                className="flex items-center space-x-2 bg-gray-100 text-gray-600 px-4 py-2 rounded-md hover:bg-gray-200"
-              >
-                <Share2 className="w-5 h-5" />
-                <span>Share</span>
-              </button>
-            </div>
-          </div>
+          {/* Reviews section follows */}
 
           <div className="border-t pt-8">
             <h2 className="text-xl font-semibold mb-6">Reviews</h2>
