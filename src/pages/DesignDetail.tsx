@@ -594,14 +594,7 @@ const fetchDesign = async () => {
             </div>
           </div>
 
-          <div className="mb-8">
-            {mockups && mockups.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-4">Mockups</h2>
-                <ImageCarousel images={mockups.map(m => getPublicUrl(m.mockup_path))} />
-              </div>
-            )}
-          </div>
+          {/* Store information section */}
 
           {store && (
             <div className="mb-6">
@@ -663,9 +656,8 @@ const fetchDesign = async () => {
           </div>
 
           <div className="flex justify-between items-start mb-6">
-            <div>
-              <p className="text-gray-600 mb-4">{design.description}</p>
-              <div className="flex flex-wrap gap-2">
+            <div className="flex-grow">
+              <div className="flex flex-wrap gap-2 mb-4">
                 {design.tags?.map((tag) => (
                   <span
                     key={tag}
