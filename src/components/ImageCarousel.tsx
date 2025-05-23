@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Zoom } from 'swiper/modules';
+import { getPublicUrl } from '../lib/supabase';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
@@ -28,6 +29,16 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
 
   const handleImageError = (imageIndex: number, error: any) => {
     console.error(`Failed to load image ${imageIndex}:`, error);
+    
+    // Log more details about the URL
+    const imageUrl = images[imageIndex];
+    const publicUrl = imageUrl.startsWith('designs/') ? getPublicUrl(imageUrl) : imageUrl;
+    console.error('Image URL details:', {
+      originalPath: imageUrl,
+      publicUrl: publicUrl,
+      isStoragePath: imageUrl.startsWith('designs/')
+    });
+    
     setLoadedImages(prev => ({
       ...prev,
       [imageIndex]: true // Mark as loaded even on error to remove loading state
@@ -63,7 +74,7 @@ export default function ImageCarousel({ images }: ImageCarouselProps) {
                   </div>
                 )}
               <img
-                  src={imageUrl}
+                  src={imageUrl.startsWith('designs/') ? getPublicUrl(imageUrl) : imageUrl}
                   alt={`Design image ${index + 1}`}
                   className={`w-full h-[500px] object-contain cursor-zoom-in transition-opacity duration-300 ${
                     loadedImages[index] ? 'opacity-100' : 'opacity-0'

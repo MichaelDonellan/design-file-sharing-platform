@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
+import { supabase, getPublicUrl } from '../lib/supabase';
 import ImageCarousel from '../components/ImageCarousel';
 import { Eye, Download, Heart, ShoppingCart, Tag, Store as StoreIcon, Calendar, Share2 } from 'lucide-react';
 import ReviewForm from '../components/ReviewForm';
@@ -453,7 +453,7 @@ const fetchDesign = async () => {
               {mockups && mockups.length > 1 ? (
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold mb-4">Mockups</h2>
-                  <ImageCarousel images={mockups.map(m => m.mockup_path)} />
+                  <ImageCarousel images={mockups.map(m => getPublicUrl(m.mockup_path))} />
                 </div>
               ) : null}
             </div>
@@ -580,7 +580,7 @@ const fetchDesign = async () => {
             {mockups && mockups.length > 0 && (
               <div className="mb-6">
                 <h2 className="text-xl font-semibold mb-4">Mockups</h2>
-                <ImageCarousel images={mockups.map(m => m.mockup_path)} />
+                <ImageCarousel images={mockups.map(m => getPublicUrl(m.mockup_path))} />
               </div>
             )}
           </div>
