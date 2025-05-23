@@ -5,34 +5,32 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/zoom';
-import type { DesignMockup } from '../types';
-import { supabase } from '../lib/supabase';
 
 interface ImageCarouselProps {
-  mockups: DesignMockup[];
+  images: string[];
 }
 
-export default function ImageCarousel({ mockups }: ImageCarouselProps) {
+export default function ImageCarousel({ images }: ImageCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loadedImages, setLoadedImages] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
-    console.log('Mockups received:', mockups);
-  }, [mockups]);
+    console.log('Images received:', images);
+  }, [images]);
 
-  const handleImageLoad = (mockupId: string) => {
-    console.log(`Image loaded successfully for mockup ${mockupId}`);
+  const handleImageLoad = (imageIndex: number) => {
+    console.log(`Image loaded successfully: ${imageIndex}`);
     setLoadedImages(prev => ({
       ...prev,
-      [mockupId]: true
+      [imageIndex]: true
     }));
   };
 
-  const handleImageError = (mockupId: string, error: any) => {
-    console.error(`Failed to load image for mockup ${mockupId}:`, error);
+  const handleImageError = (imageIndex: number, error: any) => {
+    console.error(`Failed to load image ${imageIndex}:`, error);
     setLoadedImages(prev => ({
       ...prev,
-      [mockupId]: true // Mark as loaded even on error to remove loading state
+      [imageIndex]: true // Mark as loaded even on error to remove loading state
     }));
   };
 
@@ -54,28 +52,28 @@ export default function ImageCarousel({ mockups }: ImageCarouselProps) {
         onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
         className="rounded-lg overflow-hidden"
       >
-        {mockups.map((mockup, index) => {
-          console.log(`Rendering mockup ${index + 1}:`, mockup);
+        {images.map((imageUrl, index) => {
+          console.log(`Rendering image ${index + 1}:`, imageUrl);
           return (
-          <SwiperSlide key={mockup.id} className="bg-gray-100">
+          <SwiperSlide key={index} className="bg-gray-100">
               <div className="swiper-zoom-container relative">
-                {!loadedImages[mockup.id] && (
+                {!loadedImages[index] && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
                   </div>
                 )}
               <img
-                  src={supabase.storage.from('designs').getPublicUrl(mockup.mockup_path).data.publicUrl}
-                alt={`Design mockup ${index + 1}`}
+                  src={imageUrl}
+                  alt={`Design image ${index + 1}`}
                   className={`w-full h-[500px] object-contain cursor-zoom-in transition-opacity duration-300 ${
-                    loadedImages[mockup.id] ? 'opacity-100' : 'opacity-0'
+                    loadedImages[index] ? 'opacity-100' : 'opacity-0'
                   }`}
-                  onLoad={() => handleImageLoad(mockup.id)}
-                  onError={(e) => handleImageError(mockup.id, e)}
+                  onLoad={() => handleImageLoad(index)}
+                  onError={(e) => handleImageError(index, e)}
                 />
             </div>
             <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-center py-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              {index + 1} of {mockups.length}
+              {index + 1} of {images.length}
             </div>
           </SwiperSlide>
           );
@@ -83,7 +81,7 @@ export default function ImageCarousel({ mockups }: ImageCarouselProps) {
       </Swiper>
 
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded-full">
-        {activeIndex + 1} / {mockups.length}
+        {activeIndex + 1} / {images.length}
       </div>
     </div>
   );

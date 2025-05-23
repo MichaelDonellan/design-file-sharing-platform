@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design Detail Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-icons@latest/dist/umd/lucide.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .demo-note {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: #fef3c7;
+      color: #92400e;
+      text-align: center;
+      padding: 8px;
+      z-index: 50;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="demo-note">Demo Page - Design Detail Layout</div>
+  
+  <div class="container mx-auto px-4 py-16 max-w-7xl">
+    <!-- Hero section with image and gradient overlay -->
+    <div class="relative">
+      <img src="placeholder.png" alt="Testing downloads" class="w-full h-96 object-cover">
+      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
+        <h1 class="text-3xl font-bold text-white mb-2">Testing downloads</h1>
+        <div class="flex items-center space-x-4 text-white">
+          <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye w-5 h-5 mr-1" aria-hidden="true"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <span>0 views</span>
+          </div>
+          <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart w-5 h-5 mr-1" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+            <span>0 favorites</span>
+          </div>
+          <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download w-5 h-5 mr-1" aria-hidden="true"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg>
+            <span>2 downloads</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div>
+        <div class="mb-6">
+          <h2 class="text-xl font-semibold mb-4">Mockups</h2>
+          <div class="bg-white p-4 rounded-lg shadow">
+            <img src="placeholder.png" alt="Design mockup" class="w-full h-auto rounded">
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-store w-5 h-5 mr-2 text-blue-600"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path><path d="M2 7h20"></path><path d="M22 7v3a2 2 0 0 1-2 2v0a2 2 0 0 1-2-2v0"></path><path d="M18 12v0a2 2 0 0 1-2-2v0"></path><path d="M14 12v0a2 2 0 0 1-2-2v0"></path><path d="M10 12v0a2 2 0 0 1-2-2v0"></path><path d="M6 12v0a2 2 0 0 1-2-2v0"></path><path d="M2 7v3a2 2 0 0 0 2 2v0"></path></svg>
+          <a href="#" class="text-blue-600 hover:underline">Demo Store</a>
+        </div>
+        
+        <div class="prose max-w-none mb-8">
+          <h2 class="text-xl font-semibold mb-2">Description</h2>
+          <p class="text-gray-700">
+            This is a sample design to demonstrate the download functionality. You can use this design to test how the download button works based on whether the product is free or paid, and whether the user has purchased it.
+          </p>
+        </div>
+        
+        <div class="flex flex-wrap gap-2 mb-6">
+          <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">modern</span>
+          <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">minimal</span>
+          <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">download</span>
+        </div>
+        
+        <div class="flex space-x-4 mb-8">
+          <!-- Favorite button -->
+          <button class="flex items-center space-x-2 px-4 py-2 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart w-5 h-5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+            <span>Favorite</span>
+          </button>
+          
+          <!-- Download button (visible for free products or purchased paid products) -->
+          <button class="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download w-5 h-5"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg>
+            <span>Download</span>
+          </button>
+          
+          <!-- Buy button (only shown for non-purchased paid products) -->
+          <!-- 
+          <button class="flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart w-5 h-5"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
+            <span>Buy for $10</span>
+          </button>
+          -->
+          
+          <button class="flex items-center space-x-2 bg-gray-100 text-gray-600 px-4 py-2 rounded-md hover:bg-gray-200">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2 w-5 h-5"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            <span>Share</span>
+          </button>
+        </div>
+        
+        <!-- Alternative button states to demonstrate -->
+        <div class="p-4 bg-gray-100 rounded-lg mb-6">
+          <h3 class="font-semibold mb-4">Alternative States (For Reference)</h3>
+          
+          <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-2">Free product or purchased paid product:</p>
+            <button class="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download w-5 h-5"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg>
+              <span>Download</span>
+            </button>
+          </div>
+          
+          <div>
+            <p class="text-sm text-gray-600 mb-2">Paid product that hasn't been purchased:</p>
+            <button class="flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart w-5 h-5"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
+              <span>Buy for $10</span>
+            </button>
+          </div>
+        </div>
+        
+        <div class="border-t pt-6">
+          <h2 class="text-xl font-semibold mb-4">Reviews</h2>
+          <p class="text-gray-600 text-center py-8">
+            No reviews yet. Be the first to review this design!
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

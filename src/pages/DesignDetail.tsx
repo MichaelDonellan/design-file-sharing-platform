@@ -166,10 +166,10 @@ const fetchDesign = async () => {
           setFiles(processedFiles);
         }
 
-        // Fetch reviews - Modified query to not use foreign key relationship
+        // Fetch reviews - Modified query to use the correct Supabase foreign key reference syntax
         const { data: reviewsData } = await supabase
           .from('reviews')
-          .select('*, user:user_id(*)')
+          .select('*, user(*)')
           .eq('design_id', id)
           .order('created_at', { ascending: false });
 
@@ -188,7 +188,24 @@ const fetchDesign = async () => {
   const incrementView = async () => {
     try {
       if (id) {
-        await supabase.rpc('increment_view', { design_id: id });
+        const { data, error } = await supabase.rpc('increment_view', { design_id: id });
+        if (error) {
+          // If the RPC function doesn't exist yet, don't crash the application
+          console.warn('Error incrementing view count:', error.message);
+          // Still update the view count locally for a better user experience
+          if (design) {
+            setDesign({
+              ...design,
+              views: (design.views || 0) + 1
+            });
+          }
+        } else if (data && design) {
+          // Update with the returned view count
+          setDesign({
+            ...design,
+            views: data.views
+          });
+        }
       }
     } catch (err) {
       console.error('Error incrementing view count:', err);
@@ -264,9 +281,11 @@ const fetchDesign = async () => {
   // Handle file download - Only available for free products or purchased products
   const handleDownload = async () => {
     console.log('Starting download process...');
+    setIsProcessing(true);
     
     if (!design) {
       console.error('No design data available');
+      setIsProcessing(false);
       return;
     }
     
@@ -274,12 +293,13 @@ const fetchDesign = async () => {
     if (design.price && design.price > 0 && !hasPurchased) {
       alert('Please purchase this design to download it.');
       console.log('Download blocked - paid item not purchased');
+      setIsProcessing(false);
       return;
     }
     
     try {
       // Use the first file from the files array if available
-      if (files.length === 0) {
+      if (!files || files.length === 0) {
         setError('No files available for download');
         setIsProcessing(false);
         return;
@@ -293,6 +313,7 @@ const fetchDesign = async () => {
       if (!files[0].file_path) {
         console.error('file_path is null or empty in the database record');
         alert('Download is not available — missing file path.');
+        setIsProcessing(false);
         return;
       }
       
@@ -303,7 +324,8 @@ const fetchDesign = async () => {
       
       if (error) {
         console.error('Download error:', error.message);
-        alert('Error downloading the file.');
+        alert('Error downloading the file: ' + error.message);
+        setIsProcessing(false);
         return;
       }
       
@@ -328,9 +350,12 @@ const fetchDesign = async () => {
       if (updateError) {
         console.error('Error updating download count:', updateError);
       }
+      
+      setIsProcessing(false);
     } catch (err) {
       console.error('Error downloading design:', err);
       alert(`Failed to download design: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setIsProcessing(false);
     }
   };
 
@@ -672,7 +697,7 @@ const fetchDesign = async () => {
                   window.location.reload();
                 }}
               />
-              {reviews.length > 0 ? (
+              {reviews && reviews.length > 0 ? (
                 <ReviewsList reviews={reviews} />
               ) : (
                 <p className="text-gray-600 text-center py-4">
