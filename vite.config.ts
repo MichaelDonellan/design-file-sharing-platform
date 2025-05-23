@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
         '@supabase/supabase-js',
         'date-fns',
         'react-hot-toast',
+        'react-toastify',
         'react-router-dom',
         'swiper',
         '@headlessui/react',
