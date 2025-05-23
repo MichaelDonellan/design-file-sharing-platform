@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import AuthPanel from '../components/AuthPanel';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogIn } from 'lucide-react';
@@ -10,6 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,11 +110,16 @@ export default function Login() {
 
         <div className="mt-4 text-center text-gray-600">
           Don't have an account yet?{' '}
-          <Link to="/register" className="text-blue-500 hover:text-blue-600 font-medium">
+          <button
+            onClick={() => setIsRegisterOpen(true)}
+            className="text-blue-500 hover:text-blue-600 font-medium"
+          >
             Register
-          </Link>
+          </button>
         </div>
       </form>
+      {/* Floating Register Panel */}
+      <AuthPanel isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} mode="register" />
     </div>
   );
 }
