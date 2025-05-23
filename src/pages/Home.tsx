@@ -119,18 +119,19 @@ export default function Home() {
           if (mockupsError) {
             console.error('Error fetching mockups:', mockupsError);
           } else if (mockupsData) {
-            // Create a map of design_id to first mockup public URL
-            const mockupMap = mockupsData.reduce((acc, mockup) => {
-              if (!acc[mockup.design_id]) {
-                // Generate public URL for the mockup path
-                const { data } = supabase.storage
-                  .from('designs')
-                  .getPublicUrl(mockup.mockup_path);
-                  
-                acc[mockup.design_id] = data.publicUrl;
-              }
-              return acc;
-            }, {} as Record<string, string>);
+           // Create a map of design_id to first mockup path with proper Supabase Storage URL
+const mockupMap = mockupsData.reduce((acc, mockup) => {
+  if (!acc[mockup.design_id]) {
+    // Generate a proper Supabase Storage URL
+    const { data } = supabase.storage
+      .from('designs')
+      .getPublicUrl(mockup.mockup_path);
+    
+    // Store the public URL instead of just the path
+    acc[mockup.design_id] = data.publicUrl;
+  }
+  return acc;
+}, {} as Record<string, string>);
             
             setDesignMockups(mockupMap);
           }
