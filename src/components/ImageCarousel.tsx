@@ -6,6 +6,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/zoom';
 import type { DesignMockup } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface ImageCarouselProps {
   mockups: DesignMockup[];
@@ -64,7 +65,7 @@ export default function ImageCarousel({ mockups }: ImageCarouselProps) {
                   </div>
                 )}
               <img
-                  src={mockup.mockup_path}
+                  src={supabase.storage.from('designs').getPublicUrl(mockup.mockup_path).data.publicUrl}
                 alt={`Design mockup ${index + 1}`}
                   className={`w-full h-[500px] object-contain cursor-zoom-in transition-opacity duration-300 ${
                     loadedImages[mockup.id] ? 'opacity-100' : 'opacity-0'
