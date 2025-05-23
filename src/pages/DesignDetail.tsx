@@ -673,9 +673,9 @@ const fetchDesign = async () => {
           </div>
 
           {/* Related Products section - designs with similar tags */}
-          {tagRelatedDesigns.length > 0 && (
-            <div className="border-t pt-8 mt-8">
-              <h2 className="text-xl font-semibold mb-6">Related Products</h2>
+          <div className="border-t pt-8 mt-8">
+            <h2 className="text-xl font-semibold mb-6">Related Products</h2>
+            {tagRelatedDesigns.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {tagRelatedDesigns.map((related) => (
                   <Link
@@ -723,8 +723,12 @@ const fetchDesign = async () => {
                   </Link>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-gray-600 text-center py-8 bg-gray-50 rounded-lg">
+                No related products available yet. Products with similar tags will appear here.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
