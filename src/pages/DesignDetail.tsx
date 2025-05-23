@@ -414,36 +414,54 @@ const fetchDesign = async () => {
     <div className="container mx-auto px-4 py-8">
       <div>
         <div className="mb-8">
-          {/* Hero section with image, gradient overlay and title */}
-          <div className="relative">
-            {mockups && mockups.length > 0 ? (
-              <img 
-                src={mockups[0].mockup_path} 
-                alt={design.name} 
-                className="w-full h-96 object-cover"
-              />
-            ) : (
-              <img 
-                src="/placeholder.png" 
-                alt={design.name} 
-                className="w-full h-96 object-cover"
-              />
-            )}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
-              <h1 className="text-3xl font-bold text-white mb-2">{design.name}</h1>
-              <div className="flex items-center space-x-4 text-white">
-                <div className="flex items-center">
-                  <Eye className="w-5 h-5 mr-1" aria-hidden="true" />
-                  <span>{design.views || 0} views</span>
+          {/* Mockup carousel section */}
+          <div className="mb-8">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold mb-4">Mockups</h2>
+              <div className="relative group">
+                <div className="swiper swiper-initialized swiper-horizontal rounded-lg overflow-hidden">
+                  <div className="swiper-wrapper">
+                    <div className="swiper-slide swiper-slide-active bg-gray-100" style={{ width: '339px' }}>
+                      <div className="swiper-zoom-container relative">
+                        <img 
+                          src={mockups && mockups.length > 0 
+                            ? `https://rlldapmwdyeeoloivwfi.supabase.co/storage/v1/object/public/designs/${mockups[0].mockup_path}`
+                            : "/placeholder.png"} 
+                          alt={design.name} 
+                          className="w-full h-[500px] object-contain cursor-zoom-in transition-opacity duration-300 opacity-100" 
+                        />
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-center py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        1 of {mockups ? mockups.length : 1}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="swiper-button-prev swiper-button-disabled swiper-button-lock"></div>
+                  <div className="swiper-button-next swiper-button-disabled swiper-button-lock"></div>
+                  <div className="swiper-pagination swiper-pagination-clickable swiper-pagination-bullets swiper-pagination-horizontal swiper-pagination-bullets-dynamic swiper-pagination-lock" style={{ width: '40px' }}>
+                    <span className="swiper-pagination-bullet swiper-pagination-bullet-active swiper-pagination-bullet-active-main" style={{ left: '0px' }}></span>
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <Heart className="w-5 h-5 mr-1" aria-hidden="true" />
-                  <span>{design.favorites || 0} favorites</span>
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded-full">
+                  1 / {mockups ? mockups.length : 1}
                 </div>
-                <div className="flex items-center">
-                  <Download className="w-5 h-5 mr-1" aria-hidden="true" />
-                  <span>{design.downloads || 0} downloads</span>
-                </div>
+              </div>
+            </div>
+            
+            {/* Design info section */}
+            <h1 className="text-3xl font-bold mb-2">{design.name}</h1>
+            <div className="flex items-center space-x-4 text-gray-700">
+              <div className="flex items-center">
+                <Eye className="w-5 h-5 mr-1" aria-hidden="true" />
+                <span>{design.views || 0} views</span>
+              </div>
+              <div className="flex items-center">
+                <Heart className="w-5 h-5 mr-1" aria-hidden="true" />
+                <span>{design.favorites || 0} favorites</span>
+              </div>
+              <div className="flex items-center">
+                <Download className="w-5 h-5 mr-1" aria-hidden="true" />
+                <span>{design.downloads || 0} downloads</span>
               </div>
             </div>
           </div>
