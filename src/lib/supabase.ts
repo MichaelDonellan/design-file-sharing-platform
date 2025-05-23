@@ -14,6 +14,38 @@ let client: any;
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Missing Supabase credentials. Using mock implementation for UI testing.');
   
+  // Mock reviews data
+  const mockReviews = [
+    {
+      id: '1',
+      design_id: 'ae2f0e09-d67c-4118-9cb3-3151156906e3',
+      user_id: 'user1',
+      rating: 5,
+      comment: 'Great design, exactly what I was looking for!',
+      created_at: new Date().toISOString(),
+      user: {
+        id: 'user1',
+        email: 'user@example.com',
+        full_name: 'John Doe',
+        avatar_url: 'https://i.pravatar.cc/150?img=1'
+      }
+    },
+    {
+      id: '2',
+      design_id: 'ae2f0e09-d67c-4118-9cb3-3151156906e3',
+      user_id: 'user2',
+      rating: 4,
+      comment: 'Very useful template, saved me a lot of time!',
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+      user: {
+        id: 'user2',
+        email: 'user2@example.com',
+        full_name: 'Jane Smith',
+        avatar_url: 'https://i.pravatar.cc/150?img=2'
+      }
+    }
+  ];
+
   // Create a simple mock client for UI testing
   client = {
     auth: {
@@ -33,26 +65,61 @@ if (!supabaseUrl || !supabaseAnonKey) {
         upload: async () => ({ data: { path: '/mock-path' }, error: null }),
       }),
     },
-    from: (table: string) => ({
+    rpc: (fnName: string) => ({
       select: () => ({
-        eq: () => ({
-          single: async () => ({ data: getMockData(table), error: null }),
-          limit: () => ({ data: getMockData(table), error: null }),
-          order: () => ({ data: getMockData(table), error: null }),
-        }),
-        order: () => ({
-          eq: () => ({ data: getMockData(table), error: null }),
-        }),
-        limit: () => ({ data: getMockData(table), error: null }),
-      }),
-      insert: () => ({ error: null }),
-      update: () => ({
-        eq: () => ({ error: null }),
-      }),
-      delete: () => ({
-        eq: () => ({ error: null }),
-      }),
+        single: () => ({
+          data: fnName === 'increment_view' ? { views: 1 } : null,
+          error: fnName === 'increment_view' ? null : { message: 'Function not implemented in mock' }
+        })
+      })
     }),
+    from: (table: string) => {
+      // Special handling for reviews table
+      if (table === 'reviews') {
+        return {
+          select: (query: string) => {
+            if (query.includes('design_id=eq.')) {
+              const designId = query.split('design_id=eq.')[1].split('&')[0];
+              const reviews = mockReviews.filter((r: any) => r.design_id === designId);
+              return {
+                order: () => ({
+                  data: reviews,
+                  error: null
+                })
+              };
+            }
+            return {
+              order: () => ({
+                data: mockReviews,
+                error: null
+              })
+            };
+          }
+        };
+      }
+      
+      // Default table handling
+      return {
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: getMockData(table), error: null }),
+            limit: () => ({ data: getMockData(table), error: null }),
+            order: () => ({ data: getMockData(table), error: null }),
+          }),
+          order: () => ({
+            eq: () => ({ data: getMockData(table), error: null }),
+          }),
+          limit: () => ({ data: getMockData(table), error: null }),
+        }),
+        insert: () => ({ error: null }),
+        update: () => ({
+          eq: () => ({ error: null }),
+        }),
+        delete: () => ({
+          eq: () => ({ error: null }),
+        }),
+      };
+    },
   };
   
   // Since we're using a mock, we can consider it initialized
