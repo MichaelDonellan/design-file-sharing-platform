@@ -68,7 +68,6 @@ function App() {
                   path="/dashboard/profile"
                   element={
                     <PrivateRoute>
-                      <Navbar />
                       <Profile />
                     </PrivateRoute>
                   }
@@ -77,7 +76,6 @@ function App() {
                   path="/dashboard/store"
                   element={
                     <PrivateRoute>
-                      <Navbar />
                       <Store />
                     </PrivateRoute>
                   }
@@ -86,7 +84,6 @@ function App() {
                   path="/dashboard/settings"
                   element={
                     <PrivateRoute>
-                      <Navbar />
                       <Settings />
                     </PrivateRoute>
                   }
@@ -95,7 +92,6 @@ function App() {
                   path="/dashboard/seller"
                   element={
                     <PrivateRoute>
-                      <Navbar />
                       <SellerDashboard />
                     </PrivateRoute>
                   }
@@ -104,7 +100,6 @@ function App() {
                   path="/dashboard/edit/:id"
                   element={
                     <PrivateRoute>
-                      <Navbar />
                       <EditListing />
                     </PrivateRoute>
                   }
@@ -116,7 +111,6 @@ function App() {
                   path="/admin"
                   element={
                     <PrivateRoute>
-                      <Navbar />
                       <AdminDashboard />
                     </PrivateRoute>
                   }
