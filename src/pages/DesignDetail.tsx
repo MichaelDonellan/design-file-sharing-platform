@@ -488,14 +488,16 @@ const fetchDesign = async () => {
     );
   }
 
+  // Return the full UI
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div>
-        <div className="mb-8">
-          {/* Mockup carousel section */}
+    <>
+      <div className="container mx-auto px-4 py-8">
+        <div>
           <div className="mb-8">
-            <div className="mb-6">
-              <div className="relative group">
+            {/* Mockup carousel section */}
+            <div className="mb-8">
+              <div className="mb-6">
+                <div className="relative group">
                 <div className="swiper swiper-initialized swiper-horizontal rounded-lg overflow-hidden">
                   <div className="swiper-wrapper">
                     <div className="swiper-slide swiper-slide-active bg-gray-100" style={{ width: '339px' }}>
@@ -742,9 +744,9 @@ const fetchDesign = async () => {
           </div>
         </div>
       </div>
-    </div>
-    
-    {/* Login Panel */}
-    <LoginPanel isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      </div>
+      {/* Login Panel */}
+      <LoginPanel isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+    </>
   );
 }
