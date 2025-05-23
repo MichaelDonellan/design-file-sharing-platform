@@ -120,6 +120,15 @@ BEGIN
     1
   );
   
+  -- Add a mockup for this design
+  INSERT INTO design_mockups (id, design_id, mockup_path, display_order)
+  VALUES (
+    gen_random_uuid(),
+    design_id,
+    storage_path,
+    1
+  );
+  
   -- Upload placeholder PDF for this design
   INSERT INTO storage.objects (bucket_id, name, owner, mime_type, content)
   VALUES ('designs', storage_path, user_id, 'application/pdf', pdf_content);
@@ -175,6 +184,15 @@ BEGIN
     design_id,
     storage_path,
     'image',
+    1
+  );
+  
+  -- Add a mockup for this design
+  INSERT INTO design_mockups (id, design_id, mockup_path, display_order)
+  VALUES (
+    gen_random_uuid(),
+    design_id,
+    storage_path,
     1
   );
   
