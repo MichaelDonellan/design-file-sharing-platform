@@ -503,17 +503,19 @@ const fetchDesign = async () => {
               </div>
               
               <div className="flex space-x-4 mb-8">
-                {/* Favorite button */}
                 <button
                   onClick={toggleFavorite}
                   disabled={isProcessing}
-                  className="flex items-center space-x-2 px-4 py-2 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-md ${isFavorited
+                    ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
                 >
-                  <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current text-red-500' : ''}`} />
-                  <span>Favorite</span>
+                  <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
+                  <span>{isFavorited ? 'Favorited' : 'Favorite'}</span>
                 </button>
                 
-                {/* Download button - only shown for free designs or if purchased */}
+                {/* Download button logic: show if free, or if user has purchased */}
                 {(design.price === null || design.price === 0 || hasPurchased) && (
                   <button
                     onClick={handleDownload}
@@ -522,9 +524,9 @@ const fetchDesign = async () => {
                     <Download className="w-5 h-5" />
                     <span>Download</span>
                   </button>
-                )}
+                )}{/* No text or content should be here */}
                 
-                {/* Buy button - only shown for paid designs that haven't been purchased */}
+                {/* Show Buy button if not purchased and paid product */}
                 {design.price && design.price > 0 && !hasPurchased && (
                   <button
                     onClick={handlePurchase}
@@ -535,7 +537,6 @@ const fetchDesign = async () => {
                   </button>
                 )}
                 
-                {/* Share button */}
                 <button
                   onClick={() => {
                     navigator.share({
@@ -609,3 +610,4 @@ const fetchDesign = async () => {
     </div>
   );
 }
+
