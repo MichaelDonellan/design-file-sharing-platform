@@ -277,8 +277,8 @@ const fetchDesign = async () => {
     try {
       if (id) {
         // Get the current views from the design object
-        const currentViews = design?.views || 0; // Correctly using views property
-         design 
+        const currentViews = design?.views || 0;
+        
         // First update locally for immediate feedback
         if (design) {
           setDesign({

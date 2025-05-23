@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-toastify';
@@ -6,12 +6,17 @@ import { Heart, DollarSign, ShoppingBag, Eye, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Design as Listing } from '../../types';
 
+// Extend the Listing type to include total_revenue for internal use
+type ListingWithRevenue = Listing & {
+  total_revenue?: number;
+};
+
 
 
 export default function SellerDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [listings, setListings] = useState<ListingWithRevenue[]>([]);
   const [favorites, setFavorites] = useState<number>(0);
   const [totalRevenue, setTotalRevenue] = useState<number>(0);
   const [totalViews, setTotalViews] = useState<number>(0);
@@ -85,7 +90,7 @@ export default function SellerDashboard() {
       }
 
       // Fetch total revenue for each listing
-      const listingIds = listingsData.map(listing => listing.id);
+      const listingIds = listingsData.map((listing: Listing) => listing.id);
       const { data: purchaseData, error: purchaseError } = await supabase
         .from('purchases')
         .select('design_id, amount')
@@ -99,7 +104,7 @@ export default function SellerDashboard() {
       }
 
       // Calculate total revenue for each listing
-      const revenueByListing = purchaseData.reduce((acc, purchase) => {
+      const revenueByListing = purchaseData.reduce((acc: Record<string, number>, purchase: { design_id: string, amount: number }) => {
         if (!acc[purchase.design_id]) {
           acc[purchase.design_id] = 0;
         }
@@ -108,15 +113,15 @@ export default function SellerDashboard() {
       }, {} as Record<string, number>);
 
       // Update listings with their total revenue
-      const listingsWithRevenue = listingsData.map(listing => ({
+      const listingsWithRevenue = listingsData.map((listing: Listing) => ({
         ...listing,
         total_revenue: revenueByListing[listing.id] || 0
       }));
 
       // Calculate totals
-      const totalFavorites = listingsWithRevenue.reduce((sum, listing) => sum + (listing.average_rating || 0), 0);
-      const totalRevenue = listingsWithRevenue.reduce((sum, listing) => sum + (listing.total_revenue || 0), 0);
-      const totalViews = listingsWithRevenue.reduce((sum, listing) => sum + (listing.downloads || 0), 0);
+      const totalFavorites = listingsWithRevenue.reduce((sum: number, listing: ListingWithRevenue) => sum + (listing.average_rating || 0), 0);
+      const totalRevenue = listingsWithRevenue.reduce((sum: number, listing: ListingWithRevenue) => sum + (listing.total_revenue || 0), 0);
+      const totalViews = listingsWithRevenue.reduce((sum: number, listing: ListingWithRevenue) => sum + (listing.views || 0), 0);
 
       setListings(listingsWithRevenue);
       setFavorites(totalFavorites);
@@ -159,16 +164,18 @@ export default function SellerDashboard() {
 
       // Delete files from storage
       if (files && files.length > 0) {
-        const storagePaths = files.map(file => file.path);
-        const { error: storageError } = await supabase.storage
-          .from('designs')
-          .remove(storagePaths);
-
-        if (storageError) {
-          console.error('Error deleting storage files:', storageError);
-          toast.error('Failed to delete design files');
-          return;
-        }
+        const fileResponses = await Promise.all(
+          files.map(async (file: { file_path: string }) => {
+            // Delete file from storage
+            const { error: storageError } = await supabase.storage
+              .from('designs')
+              .remove([file.file_path]);
+            if (storageError) {
+              console.error('Error deleting file from storage:', storageError);
+            }
+            return storageError;
+          })
+        );
       }
 
       // Delete files from design_files table
@@ -320,7 +327,7 @@ export default function SellerDashboard() {
                   Category
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Downloads
+                  Views
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Rating
@@ -346,7 +353,7 @@ export default function SellerDashboard() {
                     <div className="text-sm text-gray-500">{listing.category}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{listing.downloads.toLocaleString()}</div>
+                    <div className="text-sm text-gray-900">{(listing.views || 0).toLocaleString()}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{(listing.average_rating || 0).toFixed(1)}</div>
@@ -355,7 +362,7 @@ export default function SellerDashboard() {
                     <div className="text-sm text-gray-900">${(listing.price || 0).toFixed(2)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">${((listing.price || 0) * (listing.downloads || 0)).toFixed(2)}</div>
+                    <div className="text-sm text-gray-900">${(listing.total_revenue || 0).toFixed(2)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
