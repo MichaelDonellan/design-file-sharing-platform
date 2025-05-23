@@ -635,13 +635,13 @@ const fetchDesign = async () => {
             </div>
           )}
 
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center mb-6">
             <div className="flex items-center space-x-4 text-gray-600">
               <div className="flex items-center space-x-1">
                 <Calendar size={20} />
                 <span>{format(new Date(design.created_at), 'MMM d, yyyy')}</span>
               </div>
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 ml-4">
                 <Download size={20} />
                 <span>{design.downloads} downloads</span>
               </div>
@@ -655,32 +655,29 @@ const fetchDesign = async () => {
             </p>
           </div>
 
-          <div className="flex justify-between items-start mb-6">
-            <div className="flex-grow">
-              <div className="flex flex-wrap gap-2 mb-4">
-                {design.tags?.map((tag) => (
-                  <span
-                    key={tag}
-                    className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-2 mb-4">
+              {design.tags?.map((tag) => (
+                <span
+                  key={tag}
+                  className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
-            <div className="flex space-x-4">
+            
+            {/* Action buttons row */}
+            <div className="flex space-x-4 mt-6">
               <button
                 onClick={toggleFavorite}
                 disabled={isProcessing}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
-                  isFavorited
-                    ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                className="flex items-center space-x-2 px-4 py-2 rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200"
               >
-                <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
-                <span>{isFavorited ? 'Favorited' : 'Favorite'}</span>
+                <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current text-red-500' : ''}`} />
+                <span>Favorite</span>
               </button>
+              
               {/* Download button logic: show if free, or if user has purchased */}
               {(design.price === null || design.price === 0 || hasPurchased) && (
                 <button
@@ -691,6 +688,7 @@ const fetchDesign = async () => {
                   <span>Download</span>
                 </button>
               )}
+              
               {/* Show Buy button if not purchased and paid product */}
               {design.price && design.price > 0 && !hasPurchased && (
                 <button
@@ -701,6 +699,7 @@ const fetchDesign = async () => {
                   <span>{`Buy for $${design.price}`}</span>
                 </button>
               )}
+              
               <button
                 onClick={() => {
                   navigator.share({
