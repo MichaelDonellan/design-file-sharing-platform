@@ -1,9 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
 
-// Get Supabase URL and key from environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Get Supabase URL and key - hard-coded for now to ensure functionality
+const supabaseUrl = 'https://rlldapmwdyeeoloivwfi.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsbGRhcG13ZHllZW9sb2l2d2ZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3MjIyMjEsImV4cCI6MjA1OTI5ODIyMX0.QwjmwAKzaesdkIdJslJhqI6vvUNXEqbYVsKV_-zJgic';
+
+// Note: In production, you should use environment variables instead of hard-coding these values
 
 // Track initialization status
 export let isInitialized = false;
