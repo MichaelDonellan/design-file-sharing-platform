@@ -37,7 +37,9 @@ export default function DesignDetail() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [relatedDesigns, setRelatedDesigns] = useState<Design[]>([]);
-  // Using USD as default currency
+  const [tagRelatedDesigns, setTagRelatedDesigns] = useState<Design[]>([]);
+  const [tagRelatedMockups, setTagRelatedMockups] = useState<Record<string, string>>({});
+  // Currency is used for price display
   const [currency] = useState('USD');
   const [isFavorited, setIsFavorited] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -48,12 +50,16 @@ export default function DesignDetail() {
     if (user && id && design && design.price && design.price > 0) {
       // Check if user has purchased
       const checkPurchase = async () => {
-        const { data, error } = await supabase
+        const { data, error: purchaseError } = await supabase
           .from('purchases')
           .select('id')
           .eq('user_id', user.id)
           .eq('design_id', id)
           .single();
+          
+        if (purchaseError && purchaseError.code !== 'PGRST116') {
+          console.error('Error checking purchase:', purchaseError);
+        }
         setHasPurchased(!!data);
       };
       checkPurchase();
@@ -80,9 +86,65 @@ export default function DesignDetail() {
   useEffect(() => {
     if (id) {
       fetchDesign();
-      incrementView();
+      // incrementView will be called after design is loaded
     }
   }, [id]);
+
+  // Fetch designs with similar tags when the current design changes
+  useEffect(() => {
+    if (design?.tags && design.tags.length > 0) {
+      fetchTagRelatedDesigns();
+    }
+  }, [design?.id, design?.tags]);
+
+  // Fetch designs with similar tags
+  const fetchTagRelatedDesigns = async () => {
+    if (!design?.tags || design.tags.length === 0) return;
+    
+    try {
+      // Get all designs that share at least one tag with the current design
+      // and are not the current design
+      const { data, error: fetchError } = await supabase
+        .from('designs')
+        .select('*')
+        .neq('id', id)
+        .filter('tags', 'cs', `{${design.tags.join(',')}}`) // Filter designs that have at least one matching tag
+        .limit(6);
+
+      if (fetchError) {
+        console.error('Error fetching related designs:', fetchError);
+        return;
+      }
+      
+      if (data) {
+        // Filter out any designs that are already in relatedDesigns (from same store)
+        const existingIds = new Set(relatedDesigns.map((d: Design) => d.id));
+        const filteredData = data.filter((d: any) => !existingIds.has(d.id));
+        const relatedWithTags = filteredData.slice(0, 3); // Limit to 3 designs
+        setTagRelatedDesigns(relatedWithTags);
+        
+        // Fetch mockups for each related design
+        const mockupData: Record<string, string> = {};
+        
+        await Promise.all(relatedWithTags.map(async (design: Design) => {
+          const { data: mockups } = await supabase
+            .from('design_mockups')
+            .select('mockup_path')
+            .eq('design_id', design.id)
+            .order('display_order', { ascending: true })
+            .limit(1);
+            
+          if (mockups && mockups.length > 0) {
+            mockupData[design.id] = getPublicUrl(mockups[0].mockup_path);
+          }
+        }));
+        
+        setTagRelatedMockups(mockupData);
+      }
+    } catch (error) {
+      console.error('Error fetching tag-related designs:', error);
+    }
+  };
 
   // Fetch design and related data from database
 const fetchDesign = async () => {
@@ -98,6 +160,8 @@ const fetchDesign = async () => {
 
       if (data) {
         setDesign(data);
+        // Increment view count after design is loaded
+        incrementView();
         // Check if the current user has favorited this design
         if (user) {
           const { data: favoriteData } = await supabase
@@ -208,15 +272,19 @@ const fetchDesign = async () => {
 
   const incrementView = async () => {
     try {
-      if (id && design) {
+      if (id) {
+        // Get the current views from the design object
+        const currentViews = design?.views || 0; // Correctly using views property
+         design 
         // First update locally for immediate feedback
-        const currentViews = design.downloads || 0; // Using downloads as a fallback property
-        setDesign({
-          ...design,
-          views: currentViews + 1
-        });
+        if (design) {
+          setDesign({
+            ...design,
+            views: currentViews + 1
+          });
+        }
         
-        // Then try the RPC call
+        // Then update in the database
         try {
           await supabase
             .from('designs')
@@ -416,7 +484,6 @@ const fetchDesign = async () => {
           {/* Mockup carousel section */}
           <div className="mb-8">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-4">Mockups</h2>
               <div className="relative group">
                 <div className="swiper swiper-initialized swiper-horizontal rounded-lg overflow-hidden">
                   <div className="swiper-wrapper">
@@ -604,6 +671,60 @@ const fetchDesign = async () => {
               )}
             </div>
           </div>
+
+          {/* Related Products section - designs with similar tags */}
+          {tagRelatedDesigns.length > 0 && (
+            <div className="border-t pt-8 mt-8">
+              <h2 className="text-xl font-semibold mb-6">Related Products</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {tagRelatedDesigns.map((related) => (
+                  <Link
+                    key={related.id}
+                    to={`/design/${related.id}`}
+                    className="group">
+                    <div className="overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+                      <div className="aspect-w-16 aspect-h-9 bg-gray-100">
+                        <img
+                          src={tagRelatedMockups[related.id] || '/placeholder.png'}
+                          alt={related.name}
+                          className="object-cover w-full h-48 transform group-hover:scale-105 transition-transform duration-200"
+                          onError={(e) => {
+                            // Fallback if image fails to load
+                            (e.target as HTMLImageElement).src = '/placeholder.png';
+                          }}
+                        />
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-medium text-gray-900 mb-1 truncate">{related.name}</h3>
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-gray-500">
+                            {related.category}
+                          </p>
+                          <p className="font-medium text-blue-600">
+                            {related.price ? `$${related.price}` : 'Free'}
+                          </p>
+                        </div>
+                        {related.tags && related.tags.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {related.tags.slice(0, 2).map((tag, index) => (
+                              <span key={index} className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+                                {tag}
+                              </span>
+                            ))}
+                            {related.tags.length > 2 && (
+                              <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+                                +{related.tags.length - 2} more
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

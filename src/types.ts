@@ -7,6 +7,7 @@ export interface Design {
   file_type: 'image' | 'font' | 'template';
   user_id: string;
   downloads: number;
+  views: number;
   category: 'Fonts' | 'Logos' | 'Templates' | 'Icons' | 'UI Kits' | 'Freebies';
   subcategory?: string;
   tags?: string[];
