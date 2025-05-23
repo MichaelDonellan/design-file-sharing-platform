@@ -1,0 +1,13 @@
+{
+  "name": "design-file-uploader",
+  "version": "1.0.0",
+  "description": "Utility to upload design files to Supabase storage",
+  "type": "module",
+  "scripts": {
+    "upload": "node upload-design-files.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3",
+    "dotenv": "^16.4.1"
+  }
+}

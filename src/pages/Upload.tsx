@@ -7,6 +7,7 @@ import { Upload as UploadIcon, X, AlertCircle, Info } from 'lucide-react';
 import type { Store } from '../types';
 import { CATEGORIES } from '../types';
 import { toast } from 'react-hot-toast';
+import { v4 as uuidv4 } from 'uuid';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_DESIGN_TYPES = {
@@ -233,28 +234,25 @@ export default function Upload() {
     }
   };
 
-  const uploadFile = async (file: File, prefix: string) => {
+  const uploadDesignFile = async (file: File, prefix: string, designId: string): Promise<{ filePath: string }> => {
     try {
       if (!user) {
         throw new Error('User must be authenticated to upload files');
       }
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).slice(2)}.${fileExt}`;
-      const filePath = `${user.id}/${prefix}_${fileName}`;
+      // Create a standardized path for the file
+      const fileExt = file.name.split('.').pop() || '';
+      const baseName = file.name.includes('.') ? file.name.substring(0, file.name.lastIndexOf('.')) : file.name;
+      const safeFileName = baseName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const filePath = `designs/${designId}/${prefix}_${safeFileName}.${fileExt}`;
+      
+      console.log(`Uploading file to standardized path: ${filePath}`);
 
-      console.log('Attempting to upload file:', {
-        fileName,
-        filePath,
-        fileSize: file.size,
-        fileType: file.type
-      });
-
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('designs')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true // Allow overwriting if file exists
         });
 
       if (uploadError) {
@@ -262,22 +260,15 @@ export default function Upload() {
         throw new Error(`Failed to upload ${prefix} file: ${uploadError.message}`);
       }
 
-      if (!data?.path) {
-        throw new Error(`No path returned for uploaded ${prefix} file`);
-      }
+      console.log('File uploaded successfully:', filePath);
 
-      console.log('File uploaded successfully:', data.path);
-
+      // Get the public URL if needed
       const { data: { publicUrl } } = supabase.storage
         .from('designs')
-        .getPublicUrl(data.path);
-
-      if (!publicUrl) {
-        throw new Error(`Failed to get public URL for ${prefix} file`);
-      }
+        .getPublicUrl(filePath);
 
       console.log('Generated public URL:', publicUrl);
-      return publicUrl;
+      return { filePath };
     } catch (error) {
       console.error(`Error in uploadFile (${prefix}):`, error);
       throw error;
@@ -317,12 +308,18 @@ export default function Upload() {
     setLoading(true);
 
     try {
+      // Pre-generate the design ID so we can use it in file paths
+      const designId = uuidv4();
+      console.log('Created new design ID for uploads:', designId);
+      
       // Upload all design files first
       const designFileUploads = await Promise.all(
         designFiles.map(async (file, index) => {
-          const publicUrl = await uploadFile(file, 'design');
+          // Upload using our standardized naming convention
+          const { filePath } = await uploadDesignFile(file, 'design', designId);
+          
           return {
-            file_path: publicUrl,
+            file_path: filePath,
             file_type: getFileType(category),
             display_order: index
           };
@@ -332,18 +329,21 @@ export default function Upload() {
       // Upload all mockup files
       const mockupFileUploads = await Promise.all(
         mockupFiles.map(async (file, index) => {
-          const publicUrl = await uploadFile(file, 'mockup');
+          // Upload mockup files with mockup prefix
+          const { filePath } = await uploadDesignFile(file, 'mockup', designId);
+          
           return {
-            mockup_path: publicUrl,
+            mockup_path: filePath,
             display_order: index
           };
         })
       );
 
-      // Insert design record
+      // Insert design record with our pre-generated ID
       const { data: design, error: designError } = await supabase
         .from('designs')
         .insert({
+          id: designId, // Use our pre-generated ID
           name,
           description,
           category,

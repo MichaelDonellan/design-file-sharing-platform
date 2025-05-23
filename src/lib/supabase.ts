@@ -71,12 +71,37 @@ checkConnection().then(connected => {
 
 export { isInitialized };
 
+// Helper function to generate a standardized file path
+export function generateStoragePath(designId: string, filename: string): string {
+  // Extract the base name without extension
+  const baseName = filename.includes('.') ? filename.substring(0, filename.lastIndexOf('.')) : filename;
+  
+  // Get the file extension
+  const extension = filename.includes('.') ? filename.substring(filename.lastIndexOf('.') + 1) : '';
+  
+  // Slugify the name: lowercase, replace spaces with hyphens, remove non-alphanumeric chars
+  const slugified = baseName
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+  
+  // Format: designs/<design_id>/<slugified_name>.<ext>
+  return `designs/${designId}/${slugified}.${extension}`;
+}
+
 // Helper function to upload a file
-export async function uploadFile(file: File, path: string) {
+export async function uploadFile(file: File, path: string, designId?: string) {
   try {
+    // If a designId is provided, use our standardized path format
+    const uploadPath = designId 
+      ? generateStoragePath(designId, file.name)
+      : path;
+    
+    console.log(`Uploading file to ${uploadPath}`);
+    
     const { data, error } = await supabase.storage
       .from('designs')
-      .upload(path, file, {
+      .upload(uploadPath, file, {
         cacheControl: '3600',
         upsert: true
       });
