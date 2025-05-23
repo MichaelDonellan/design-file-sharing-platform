@@ -47,6 +47,7 @@ export default function DesignDetail() {
   const [error, setError] = useState('');
   const [hasPurchased, setHasPurchased] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [pendingDownload, setPendingDownload] = useState(false);
 
   useEffect(() => {
     if (user && id && design && design.price && design.price > 0) {
@@ -386,6 +387,8 @@ const fetchDesign = async () => {
     if (!user) {
       console.log('User not logged in, showing login modal');
       setIsProcessing(false);
+      // Set pendingDownload flag to true so we know to download after login
+      setPendingDownload(true);
       setShowLoginModal(true);
       return;
     }
@@ -492,7 +495,17 @@ const fetchDesign = async () => {
       {/* Login Modal */}
       <LoginPanel 
         isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)} 
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={() => {
+          // If there was a pending download, trigger it automatically after login
+          if (pendingDownload) {
+            setPendingDownload(false);
+            // Small delay to ensure the user state is updated
+            setTimeout(() => {
+              handleDownload();
+            }, 500);
+          }
+        }} 
       />
       <div>
         <div className="mb-8">
