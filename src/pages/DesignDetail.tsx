@@ -469,7 +469,6 @@ const fetchDesign = async () => {
             <div>
               {mockups && mockups.length > 1 ? (
                 <div className="mb-6">
-                  <h2 className="text-xl font-semibold mb-4">Mockups</h2>
                   <ImageCarousel images={mockups.map(m => getPublicUrl(m.mockup_path))} />
                 </div>
               ) : null}
