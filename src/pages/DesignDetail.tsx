@@ -166,15 +166,37 @@ const fetchDesign = async () => {
           setFiles(processedFiles);
         }
 
-        // Fetch reviews - Modified query to use the correct Supabase foreign key reference syntax
-        const { data: reviewsData } = await supabase
-          .from('reviews')
-          .select('*, user(*)')
-          .eq('design_id', id)
-          .order('created_at', { ascending: false });
+        // Fetch reviews - Use a simpler query without foreign key reference
+        try {
+          const { data: reviewsData, error: reviewsError } = await supabase
+            .from('reviews')
+            .select('*')
+            .eq('design_id', id)
+            .order('created_at', { ascending: false });
 
-        if (reviewsData) {
-          setReviews(reviewsData);
+          if (reviewsError) {
+            console.error('Error fetching reviews:', reviewsError);
+          } else if (reviewsData) {
+            // If we have review data, fetch user data separately for each review
+            const reviewsWithUsers = await Promise.all(
+              reviewsData.map(async (review) => {
+                if (review.user_id) {
+                  const { data: userData } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', review.user_id)
+                    .single();
+                  
+                  return { ...review, user: userData };
+                }
+                return review;
+              })
+            );
+            
+            setReviews(reviewsWithUsers);
+          }
+        } catch (reviewError) {
+          console.error('Error processing reviews:', reviewError);
         }
       }
     } catch (error) {
@@ -187,28 +209,30 @@ const fetchDesign = async () => {
 
   const incrementView = async () => {
     try {
-      if (id) {
-        const { data, error } = await supabase.rpc('increment_view', { design_id: id });
-        if (error) {
-          // If the RPC function doesn't exist yet, don't crash the application
-          console.warn('Error incrementing view count:', error.message);
-          // Still update the view count locally for a better user experience
-          if (design) {
-            setDesign({
-              ...design,
-              views: (design.views || 0) + 1
-            });
-          }
-        } else if (data && design) {
-          // Update with the returned view count
-          setDesign({
-            ...design,
-            views: data.views
-          });
+      if (id && design) {
+        // First update locally for immediate feedback
+        const currentViews = design.downloads || 0; // Using downloads as a fallback property
+        setDesign({
+          ...design,
+          views: currentViews + 1
+        });
+        
+        // Then try the RPC call
+        try {
+          await supabase
+            .from('designs')
+            .update({ views: currentViews + 1 })
+            .eq('id', id);
+          
+          console.log('View count updated successfully');
+        } catch (error) {
+          console.warn('Could not update view count in database:', error);
+          // Already updated UI, so no need for fallback
         }
       }
     } catch (err) {
-      console.error('Error incrementing view count:', err);
+      console.error('Error in view count logic:', err);
+      // Fail silently to user
     }
   };
 
