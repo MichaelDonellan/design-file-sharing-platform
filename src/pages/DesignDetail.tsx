@@ -7,6 +7,7 @@ import ImageCarousel from '../components/ImageCarousel';
 import { Eye, Download, Heart, ShoppingCart, Store as StoreIcon, Share2 } from 'lucide-react';
 import ReviewForm from '../components/ReviewForm';
 import ReviewsList from '../components/ReviewsList';
+import LoginPanel from '../components/LoginPanel';
 import type { Design, Store, Review, DesignMockup, DesignFile } from '../types';
 
 const SUPPORTED_CURRENCIES = [
@@ -45,6 +46,7 @@ export default function DesignDetail() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [hasPurchased, setHasPurchased] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     if (user && id && design && design.price && design.price > 0) {
@@ -380,6 +382,14 @@ const fetchDesign = async () => {
       return;
     }
     
+    // Check if user is logged in
+    if (!user) {
+      console.log('User not logged in, showing login modal');
+      setIsProcessing(false);
+      setShowLoginModal(true);
+      return;
+    }
+    
     // Check if the user can download (free design or has purchased)
     if (design.price && design.price > 0 && !hasPurchased) {
       alert('Please purchase this design to download it.');
@@ -479,6 +489,11 @@ const fetchDesign = async () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Login Modal */}
+      <LoginPanel 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+      />
       <div>
         <div className="mb-8">
           {/* Mockup carousel section */}
