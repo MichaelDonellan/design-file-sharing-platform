@@ -264,12 +264,16 @@ export default function DesignDetail() {
         return;
       }
       
-      const filePath = file.storage_path;
-      const fileName = file.original_name || 'design-file';
+      // Use file_path from our DesignFile interface
+      const filePath = file.file_path;
       
-      // Verify storage_path exists
+      // Extract a filename from the file path since DesignFile doesn't have a name property
+      const pathParts = filePath.split('/');
+      const fileName = pathParts[pathParts.length - 1] || 'design-file';
+      
+      // Verify file_path exists
       if (!filePath) {
-        console.error('storage_path is null or empty in the database record');
+        console.error('file_path is null or empty in the database record');
         alert('Download is not available — missing file path.');
         return;
       }
