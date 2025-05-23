@@ -8,6 +8,7 @@ import { Eye, Download, Heart, ShoppingCart, Store as StoreIcon, Share2 } from '
 import ReviewForm from '../components/ReviewForm';
 import ReviewsList from '../components/ReviewsList';
 import LoginPanel from '../components/LoginPanel';
+import { toast } from 'react-toastify';
 import type { Design, Store, Review, DesignMockup, DesignFile } from '../types';
 
 const SUPPORTED_CURRENCIES = [
@@ -46,8 +47,7 @@ export default function DesignDetail() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [hasPurchased, setHasPurchased] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [pendingDownload, setPendingDownload] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   useEffect(() => {
     if (user && id && design && design.price && design.price > 0) {
@@ -383,19 +383,17 @@ const fetchDesign = async () => {
       return;
     }
     
-    // Check if user is logged in
+    // First check if user is logged in
     if (!user) {
-      console.log('User not logged in, showing login modal');
+      console.log('User not logged in - showing login popup');
       setIsProcessing(false);
-      // Set pendingDownload flag to true so we know to download after login
-      setPendingDownload(true);
-      setShowLoginModal(true);
+      setIsLoginOpen(true);
       return;
     }
     
     // Check if the user can download (free design or has purchased)
     if (design.price && design.price > 0 && !hasPurchased) {
-      alert('Please purchase this design to download it.');
+      toast.warning('Please purchase this design to download it.');
       console.log('Download blocked - paid item not purchased');
       setIsProcessing(false);
       return;
@@ -492,21 +490,6 @@ const fetchDesign = async () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Login Modal */}
-      <LoginPanel 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)}
-        onLoginSuccess={() => {
-          // If there was a pending download, trigger it automatically after login
-          if (pendingDownload) {
-            setPendingDownload(false);
-            // Small delay to ensure the user state is updated
-            setTimeout(() => {
-              handleDownload();
-            }, 500);
-          }
-        }} 
-      />
       <div>
         <div className="mb-8">
           {/* Mockup carousel section */}
@@ -760,5 +743,8 @@ const fetchDesign = async () => {
         </div>
       </div>
     </div>
+    
+    {/* Login Panel */}
+    <LoginPanel isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
   );
 }

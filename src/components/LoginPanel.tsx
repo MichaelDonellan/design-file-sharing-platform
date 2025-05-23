@@ -6,10 +6,9 @@ import { toast } from 'react-toastify';
 interface LoginPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess?: () => void; // Optional callback for when login is successful
 }
 
-export default function LoginPanel({ isOpen, onClose, onLoginSuccess }: LoginPanelProps) {
+export default function LoginPanel({ isOpen, onClose }: LoginPanelProps) {
   const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,11 +24,6 @@ export default function LoginPanel({ isOpen, onClose, onLoginSuccess }: LoginPan
 
       toast.success('Login successful!');
       onClose();
-      
-      // Execute the callback if provided
-      if (onLoginSuccess) {
-        onLoginSuccess();
-      }
     } catch (error) {
       toast.error('Login failed. Please check your credentials.');
     } finally {
