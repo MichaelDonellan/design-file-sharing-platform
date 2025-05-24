@@ -109,7 +109,7 @@ export default function Navbar() {
                   className="text-gray-600 hover:text-gray-900"
                 >
                   <Store size={20} />
-                  <span className="ml-2">Store</span>
+                  <span className="ml-2">Create a Store</span>
                 </Link>
                 
                 {isAdmin && (

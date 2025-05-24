@@ -50,7 +50,15 @@ function App() {
                 <Route path="/files/:id/reject" element={<RejectFile />} />
                 <Route path="/files/:id/approve" element={<ApproveFile />} />
                 <Route path="/design/:id" element={<DesignDetail />} />
-                <Route path="/store/:storeName" element={<PublicStore />} />
+                <Route
+  path="/store"
+  element={
+    <PrivateRoute>
+      <Store />
+    </PrivateRoute>
+  }
+/>
+<Route path="/store/:storeName" element={<PublicStore />} />
                 <Route path="/auth/verify-email" element={<VerifyEmail />} />
                 <Route
                   path="/upload"

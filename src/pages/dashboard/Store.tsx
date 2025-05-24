@@ -1,210 +1,369 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { Download, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
-import type { Design, Store as StoreType } from '../../types';
-
-const SUPPORTED_CURRENCIES = [
-  { code: 'USD', symbol: '$', name: 'US Dollar' },
-  { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'GBP', symbol: '£', name: 'British Pound' },
-  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
-  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
-];
-const EXCHANGE_RATES: Record<string, number> = {
-  USD: 1,
-  EUR: 0.92,
-  GBP: 0.79,
-  CAD: 1.36,
-  AUD: 1.52,
-};
+import { Store as StoreIcon, AlertCircle } from 'lucide-react';
 
 export default function Store() {
   const { user } = useAuth();
-  const [store, setStore] = useState<StoreType | null>(null);
-  const [designs, setDesigns] = useState<Design[]>([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [storeExists, setStoreExists] = useState<boolean | null>(null);
+
+  // Form state
+  const [storeName, setStoreName] = useState('');
+  const [description, setDescription] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string>('');
+  const [storeUrl, setStoreUrl] = useState('');
   const [currency, setCurrency] = useState('USD');
+  const [payoutMethod, setPayoutMethod] = useState('bank');
+  const [bankDetails, setBankDetails] = useState({
+    accountName: '',
+    accountNumber: '',
+    bankName: '',
+    routingNumber: '',
+  });
+  const [paypalEmail, setPaypalEmail] = useState('');
 
   useEffect(() => {
-    async function fetchStoreAndDesigns() {
+    // Check if user already has a store
+    async function checkStore() {
       if (!user) return;
-
-      // Fetch store data
-      const { data: storeData } = await supabase
+      const { data } = await supabase
         .from('stores')
-        .select('*')
+        .select('id')
         .eq('user_id', user.id)
         .single();
-
-      setStore(storeData);
-
-      if (storeData) {
-        // Fetch designs for this store
-        const { data: designsData } = await supabase
-          .from('designs')
-          .select('*')
-          .eq('store_id', storeData.id)
-          .order('created_at', { ascending: false });
-
-        if (designsData) {
-          setDesigns(designsData);
-        }
-      }
-
-      setLoading(false);
+      setStoreExists(!!data);
     }
-
-    fetchStoreAndDesigns();
+    checkStore();
   }, [user]);
 
   useEffect(() => {
-    const stored = localStorage.getItem('preferredCurrency');
-    if (stored && EXCHANGE_RATES[stored]) {
-      setCurrency(stored);
-      return;
-    }
     fetch('https://ipapi.co/json/')
       .then(res => res.json())
       .then(data => {
         const countryToCurrency: Record<string, string> = {
           US: 'USD', GB: 'GBP', AU: 'AUD', CA: 'CAD', EU: 'EUR', FR: 'EUR', DE: 'EUR', IT: 'EUR', ES: 'EUR', NL: 'EUR', BE: 'EUR', AT: 'EUR', IE: 'EUR', PT: 'EUR', FI: 'EUR', GR: 'EUR',
         };
-        if (data.country && countryToCurrency[data.country] && EXCHANGE_RATES[countryToCurrency[data.country]]) {
+        if (data.country && countryToCurrency[data.country]) {
           setCurrency(countryToCurrency[data.country]);
-          localStorage.setItem('preferredCurrency', countryToCurrency[data.country]);
         }
       })
       .catch(() => {});
   }, []);
 
-  const getCurrencySymbol = (currency: string) => {
-    const found = SUPPORTED_CURRENCIES.find(c => c.code === currency);
-    return found ? found.symbol : '$';
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const convertPrice = (usd: number, to: string) => {
-    if (!EXCHANGE_RATES[to]) return usd;
-    return Math.round((usd * EXCHANGE_RATES[to]) * 100) / 100;
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfileImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  if (loading) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      setError('');
+
+      // Upload avatar if selected
+      let avatarUrl = null;
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('store-avatars')
+          .upload(fileName, avatarFile);
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage
+          .from('store-avatars')
+          .getPublicUrl(fileName);
+        avatarUrl = publicUrl;
+      }
+
+      // Upload profile image if selected
+      let profileImageUrl = null;
+      if (profileImageFile) {
+        const fileExt = profileImageFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('store-profiles')
+          .upload(fileName, profileImageFile);
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage
+          .from('store-profiles')
+          .getPublicUrl(fileName);
+        profileImageUrl = publicUrl;
+      }
+
+      // Create store
+      const { error: storeError } = await supabase
+        .from('stores')
+        .insert({
+          name: storeName,
+          description,
+          avatar_url: avatarUrl,
+          profile_image_url: profileImageUrl,
+          store_url: storeUrl,
+          currency,
+          payout_method: payoutMethod,
+          bank_details: payoutMethod === 'bank' ? bankDetails : null,
+          paypal_email: payoutMethod === 'paypal' ? paypalEmail : null,
+          user_id: user.id,
+        });
+
+      if (storeError) throw storeError;
+
+      setSuccess(true);
+      setTimeout(() => {
+        navigate('/dashboard/seller');
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to create store. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (storeExists === null) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-gray-600">Loading store...</div>
+        <div className="text-gray-600">Checking store status...</div>
       </div>
     );
   }
-
-  if (!store) {
+  if (storeExists) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-2xl mx-auto p-6">
         <div className="bg-white rounded-lg shadow-md p-6 text-center">
-          <h2 className="text-xl font-semibold mb-4">You haven't created a store yet</h2>
-          <p className="text-gray-600 mb-6">
-            Create a store to start selling your designs
-          </p>
-          <Link
-            to="/dashboard/settings"
+          <h2 className="text-xl font-semibold mb-4">You already have a store</h2>
+          <button
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            onClick={() => navigate('/dashboard/seller')}
           >
-            Create Store
-          </Link>
+            Go to Seller Dashboard
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6 flex justify-end">
-        <select
-          value={currency}
-          onChange={e => {
-            setCurrency(e.target.value);
-            localStorage.setItem('preferredCurrency', e.target.value);
-          }}
-          className="border border-gray-300 rounded px-3 py-1 text-sm"
-        >
-          {SUPPORTED_CURRENCIES.map(c => (
-            <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
-          ))}
-        </select>
-      </div>
+    <div className="max-w-2xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold truncate max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl">{store.name}</h1>
-            {store.description && (
-              <p className="text-gray-600 mt-2">{store.description}</p>
-            )}
-          </div>
-          <Link
-            to="/dashboard/settings"
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-          >
-            Edit Store
-          </Link>
-        </div>
-
-        {designs.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">No designs in your store yet</p>
-            <Link
-              to="/upload"
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-            >
-              Upload a Design
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {designs.map((design) => (
-              <Link
-                key={design.id}
-                to={`/design/${design.id}`}
-                className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
-              >
-                <img
-                  src={design.mockup_path}
-                  alt={design.name}
-                  className="w-full h-48 object-cover rounded-t-lg"
-                />
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 truncate max-w-full">{design.name}</h3>
-                  <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Calendar size={16} className="mr-1" />
-                      {format(new Date(design.created_at), 'MMM d, yyyy')}
-                    </div>
-                    <div className="flex items-center">
-                      <Download size={16} className="mr-1" />
-                      {design.downloads}
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    {design.price && design.price > 0 ? (
-                      <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
-                        {getCurrencySymbol(currency)}{convertPrice(design.price, currency).toFixed(2)}
-                      </span>
-                    ) : (
-                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
-                    )}
-                  </div>
-                  {design.tags && design.tags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {design.tags.map((tag) => (
-                        <span key={tag} className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">{tag}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Link>
-            ))}
+        <h1 className="text-2xl font-bold mb-6">Create Your Store</h1>
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded flex items-center">
+            <AlertCircle className="w-5 h-5 mr-2" />
+            <span>{error}</span>
           </div>
         )}
+        {success && (
+          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded flex items-center">
+            <StoreIcon className="w-5 h-5 mr-2" />
+            <span>Store created successfully! Redirecting...</span>
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="storeName" className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
+            <input
+              type="text"
+              id="storeName"
+              value={storeName}
+              onChange={e => setStoreName(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              rows={3}
+            />
+          </div>
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Store Avatar</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="w-full"
+              />
+              {avatarPreview && (
+                <img src={avatarPreview} alt="Avatar Preview" className="mt-2 w-24 h-24 rounded-full object-cover border" />
+              )}
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Profile Image</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleProfileImageChange}
+                className="w-full"
+              />
+              {profileImagePreview && (
+                <img src={profileImagePreview} alt="Profile Preview" className="mt-2 w-24 h-24 rounded-full object-cover border" />
+              )}
+            </div>
+          </div>
+          <div>
+            <label htmlFor="storeUrl" className="block text-sm font-medium text-gray-700 mb-1">Store URL</label>
+            <input
+              type="text"
+              id="storeUrl"
+              value={storeUrl}
+              onChange={e => setStoreUrl(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="your-store-url"
+            />
+          </div>
+          <div>
+            <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">Default Currency</label>
+            <select
+              id="currency"
+              value={currency}
+              onChange={e => setCurrency(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="CAD">CAD (C$)</option>
+              <option value="AUD">AUD (A$)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Payout Method</label>
+            <div className="flex items-center gap-6">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="bank"
+                  checked={payoutMethod === 'bank'}
+                  onChange={e => setPayoutMethod(e.target.value)}
+                  className="mr-2"
+                />
+                <span>Bank Transfer</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="paypal"
+                  checked={payoutMethod === 'paypal'}
+                  onChange={e => setPayoutMethod(e.target.value)}
+                  className="mr-2"
+                />
+                <span>PayPal</span>
+              </label>
+            </div>
+          </div>
+          {payoutMethod === 'bank' && (
+            <div className="space-y-4 p-4 bg-gray-50 rounded-md">
+              <div>
+                <label htmlFor="accountName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Account Holder Name
+                </label>
+                <input
+                  type="text"
+                  id="accountName"
+                  value={bankDetails.accountName}
+                  onChange={e => setBankDetails({ ...bankDetails, accountName: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="accountNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                  Account Number
+                </label>
+                <input
+                  type="text"
+                  id="accountNumber"
+                  value={bankDetails.accountNumber}
+                  onChange={e => setBankDetails({ ...bankDetails, accountNumber: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="bankName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Bank Name
+                </label>
+                <input
+                  type="text"
+                  id="bankName"
+                  value={bankDetails.bankName}
+                  onChange={e => setBankDetails({ ...bankDetails, bankName: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="routingNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                  Routing Number
+                </label>
+                <input
+                  type="text"
+                  id="routingNumber"
+                  value={bankDetails.routingNumber}
+                  onChange={e => setBankDetails({ ...bankDetails, routingNumber: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+          )}
+          {payoutMethod === 'paypal' && (
+            <div>
+              <label htmlFor="paypalEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                PayPal Email
+              </label>
+              <input
+                type="email"
+                id="paypalEmail"
+                value={paypalEmail}
+                onChange={e => setPaypalEmail(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="your@email.com"
+              />
+            </div>
+          )}
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Creating Store...' : 'Create Store'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
