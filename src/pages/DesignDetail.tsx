@@ -49,6 +49,37 @@ export default function DesignDetail() {
   const [hasPurchased, setHasPurchased] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
+
+
+  // --- Realtime subscription for views ---
+  useEffect(() => {
+    if (!id) return;
+    // Only subscribe if Supabase client supports channel API
+    // @ts-ignore
+    if (!supabase.channel) return;
+    // Subscribe to changes on the 'designs' table for this design
+    const channel = supabase.channel(`designs:views:${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'designs',
+          filter: `id=eq.${id}`,
+        },
+        (payload: any) => {
+          if (payload.new && typeof payload.new.views === 'number') {
+            setDesign((prev) => prev ? { ...prev, views: payload.new.views } : prev);
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      channel.unsubscribe && channel.unsubscribe();
+    };
+  }, [id]);
+
+
   useEffect(() => {
     if (user && id && design && design.price && design.price > 0) {
       // Check if user has purchased
