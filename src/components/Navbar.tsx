@@ -64,7 +64,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-4">
         {/* Logo */}
         <Link to="/" className="font-extrabold text-2xl text-gray-900 tracking-tight mr-6 whitespace-nowrap">
-          Creative Fabrica
+          The Craft Syde
         </Link>
         {/* Search Bar */}
         <form onSubmit={handleSearch} className="flex-1 max-w-xl mx-6">
