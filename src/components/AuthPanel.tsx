@@ -277,8 +277,9 @@ export default function AuthPanel({ isOpen, onClose, mode }: AuthPanelProps) {
                 Don't have an account?{' '}
                 <button
                   onClick={() => {
+                    // Change mode from login to register
+                    window.dispatchEvent(new CustomEvent('openRegisterPanel'));
                     onClose();
-                    // Open register panel
                   }}
                   className="text-blue-500 hover:text-blue-600 font-medium"
                 >

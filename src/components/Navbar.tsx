@@ -21,6 +21,16 @@ export default function Navbar() {
     checkStoreStatus();
   }, [user]);
 
+  // Listen for custom event to open register panel
+  useEffect(() => {
+    const openRegisterPanelHandler = () => setIsRegisterOpen(true);
+    window.addEventListener('openRegisterPanel', openRegisterPanelHandler);
+    
+    return () => {
+      window.removeEventListener('openRegisterPanel', openRegisterPanelHandler);
+    };
+  }, []);
+
   const checkStoreStatus = async () => {
     try {
       const { data, error } = await supabase
@@ -101,13 +111,7 @@ export default function Navbar() {
                   <Store size={20} />
                   <span className="ml-2">Store</span>
                 </Link>
-                <Link
-                  to="/settings"
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  <Settings size={20} />
-                  <span className="ml-2">Settings</span>
-                </Link>
+                
                 {isAdmin && (
                   <Link
                     to="/admin"

@@ -6,7 +6,7 @@ import DesignDetail from './pages/DesignDetail';
 import DemoDesignDetail from './pages/DemoDesignDetail';
 import Upload from './pages/Upload';
 import Login from './pages/Login';
-import Register from './pages/Register';
+// Register page removed - using floating panel instead
 import ForgotPassword from './pages/ForgotPassword';
 import Profile from './pages/dashboard/Profile';
 import Store from './pages/dashboard/Store';
@@ -60,7 +60,7 @@ function App() {
                     </PrivateRoute>
                   }
                 />
-                <Route path="/register" element={<Register />} />
+                {/* Register route removed - using floating panel instead */}
                 <Route path="/forgot-password" element={<ForgotPassword />} />
 
                 {/* Private Routes */}

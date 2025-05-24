@@ -14,7 +14,7 @@ where not exists (
 
 -- Add admin email for tammylouise407@gmail.com
 insert into admin_emails (email)
-values ('tammylouise407@gmail.com')
+select 'tammylouise407@gmail.com'
 where not exists (
   select 1 from admin_emails where email = 'tammylouise407@gmail.com'
 );

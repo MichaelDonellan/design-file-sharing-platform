@@ -23,6 +23,64 @@ export default function SellerDashboard() {
   const [loading, setLoading] = useState(true);
   const [hasStore, setHasStore] = useState(false);
 
+  // --- Realtime subscription for views across all listings ---
+  useEffect(() => {
+    if (!user) return;
+    // Only subscribe if Supabase client supports channel API
+    // @ts-ignore
+    if (!supabase.channel) return;
+    // Subscribe to all 'designs' updates for this user
+    const channel = supabase.channel(`seller_dashboard:designs:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'designs',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload: any) => {
+          // Update the relevant listing in state
+          if (payload.new && payload.new.id) {
+            setListings((prev) => {
+              if (!prev) return prev;
+              return prev.map((listing) =>
+                listing.id === payload.new.id
+                  ? { ...listing, views: payload.new.views }
+                  : listing
+              );
+            });
+            // Update total views
+            setTotalViews((prevTotal) => {
+              // Recalculate from all listings if possible
+              return listings
+                ? listings.reduce(
+                    (sum, listing) =>
+                      sum +
+                      (listing.id === payload.new.id
+                        ? payload.new.views || 0
+                        : listing.views || 0),
+                    0
+                  )
+                : prevTotal;
+            });
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      channel.unsubscribe && channel.unsubscribe();
+    };
+  }, [user, listings]);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [listings, setListings] = useState<ListingWithRevenue[]>([]);
+  const [favorites, setFavorites] = useState<number>(0);
+  const [totalRevenue, setTotalRevenue] = useState<number>(0);
+  const [totalViews, setTotalViews] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [hasStore, setHasStore] = useState(false);
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -309,10 +367,17 @@ export default function SellerDashboard() {
             <h2 className="text-lg font-medium text-gray-900">Your Designs</h2>
             <button
               onClick={() => navigate('/dashboard/store')}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 mr-2"
             >
               <Plus className="-ml-1 mr-2 h-5 w-5" />
               Add New Design
+            </button>
+            <button
+              onClick={() => navigate('/dashboard/settings')}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-settings mr-2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              <span>Settings</span>
             </button>
           </div>
         </div>
