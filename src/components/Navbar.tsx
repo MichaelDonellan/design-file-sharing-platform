@@ -156,54 +156,6 @@ export default function Navbar() {
     </header>
   );
 }
-                    <span>Store</span>
-                  </Link>
-                  <Link
-                    to="/dashboard/settings"
-                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Settings size={20} />
-                    <span>Settings</span>
-                  </Link>
-                  {isAdmin && (
-                    <Link
-                      to="/admin"
-                      className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <ShoppingBag size={20} />
-                      <span>Admin</span>
-                    </Link>
-                  )}
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      signOut();
-                    }}
-                    className="flex items-center space-x-2 w-full text-left px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
-                  >
-                    <LogOut size={20} />
-                    <span>Logout</span>
-                  </button>
-                </div>
-
-                {/* Main Navigation */}
-                <div className="border-b border-gray-200 pb-2 mb-2">
-                  <Link
-                    to="/upload"
-                    className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Upload size={20} />
-                    <span>Upload</span>
-                  </Link>
-                  <Link
-                    to="/categories"
-                    className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Tag size={20} />
                     <span>Categories</span>
                   </Link>
                 </div>
