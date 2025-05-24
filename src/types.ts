@@ -8,7 +8,7 @@ export interface Design {
   user_id: string;
   downloads: number;
   views: number;
-  category: 'Fonts' | 'Logos' | 'Templates' | 'Icons' | 'UI Kits' | 'Freebies';
+  category: 'SVGs' | 'Images' | 'Fonts' | 'Bundles' | 'Templates' | 'Laser Cutting' | 'Sublimation';
   subcategory?: string;
   tags?: string[];
   store_id?: string;
@@ -78,11 +78,12 @@ export interface CategoryFilter {
   sub?: string;
 }
 
-export const CATEGORIES = {
-  'Fonts': ['Serif', 'Sans Serif', 'Display', 'Script', 'Monospace'],
-  'Logos': ['Minimal', 'Vintage', 'Abstract', 'Mascot', 'Lettermark'],
-  'Templates': ['Social Media', 'Print', 'Web', 'Mobile', 'Presentation'],
-  'Icons': ['Line', 'Filled', 'Duotone', 'Outline', 'Animated'],
-  'UI Kits': ['Mobile', 'Dashboard', 'Landing Page', 'E-commerce', 'Components'],
-  'Freebies': ['Fonts', 'Logos', 'Templates', 'Icons', 'UI Kits']
-} as const;
+export const CATEGORIES = [
+  'SVGs',
+  'Images',
+  'Fonts',
+  'Bundles',
+  'Templates',
+  'Laser Cutting',
+  'Sublimation',
+] as const;

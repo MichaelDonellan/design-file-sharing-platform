@@ -19,6 +19,7 @@ export default function Navbar() {
   const [language] = useState("EN");
 
   const mainLinks = [
+    // Main links remain unchanged for now; category links will be added below
     { name: "Fonts", to: "/categories?main=Fonts" },
     { name: "Images", to: "/categories?main=Images" },
     { name: "3D Crafts", to: "/categories?main=3D%20Crafts" },
@@ -31,6 +32,17 @@ export default function Navbar() {
     { name: "Learn", to: "/learn" },
     { name: "Studio", to: "/studio" },
     { name: "Subscription", to: "/subscription" },
+  ];
+
+  // New horizontal category links
+  const navbarCategories = [
+    'SVGs',
+    'Images',
+    'Fonts',
+    'Bundles',
+    'Templates',
+    'Laser Cutting',
+    'Sublimation',
   ];
 
   const rightLinks = [
@@ -125,6 +137,18 @@ export default function Navbar() {
             ))}
           </div>
         </div>
+        {/* Category Links Row */}
+        <div className="max-w-7xl mx-auto flex items-center px-4 overflow-x-auto scrollbar-hide border-t border-gray-100 bg-white">
+          {navbarCategories.map(cat => (
+            <Link
+              key={cat}
+              to={`/category/${cat.toLowerCase().replace(/ /g, '-')}`}
+              className="py-2 px-3 text-gray-600 hover:text-blue-600 font-medium text-sm whitespace-nowrap"
+            >
+              {cat}
+            </Link>
+          ))}
+        </div>
       </nav>
       {/* Login/Register Panels */}
       <LoginPanel isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
@@ -132,144 +156,6 @@ export default function Navbar() {
     </header>
   );
 }
-  const { user, signOut, isAdmin } = useAuth();
-  const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [hasStore, setHasStore] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-
-    checkStoreStatus();
-  }, [user]);
-
-  // Listen for custom event to open register panel
-  useEffect(() => {
-    const openRegisterPanelHandler = () => setIsRegisterOpen(true);
-    window.addEventListener('openRegisterPanel', openRegisterPanelHandler);
-    
-    return () => {
-      window.removeEventListener('openRegisterPanel', openRegisterPanelHandler);
-    };
-  }, []);
-
-  const checkStoreStatus = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('stores')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error) throw error;
-      setHasStore(true);
-    } catch (error) {
-      console.error('Error checking store status:', error);
-      setHasStore(false);
-    }
-  };
-
-  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-
-  const toggleCategory = (category: string) => {
-    setExpandedCategories(prev =>
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
-  };
-
-  return (
-    <nav className="bg-white shadow-lg">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-            >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-            <Link to="/" className="text-xl font-bold text-gray-800 ml-2">
-              DesignShare
-            </Link>
-          </div>
-          
-          {/* Mobile Profile Icon */}
-          {user && (
-            <div className="lg:hidden">
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 rounded-full bg-blue-500 text-white"
-              >
-                <User size={20} />
-              </button>
-            </div>
-          )}
-          
-          <div className="hidden lg:flex items-center space-x-4">
-            <Link
-              to="/categories"
-              className="text-gray-600 hover:text-gray-900"
-            >
-              <Tag size={20} />
-              <span className="ml-2">Categories</span>
-            </Link>
-            {user ? (
-              <>
-                <Link
-                  to="/upload"
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  <Upload size={20} />
-                  <span className="ml-2">Upload</span>
-                </Link>
-                <Link
-                  to="/store"
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  <Store size={20} />
-                  <span className="ml-2">Create a Store</span>
-                </Link>
-                
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    <ShoppingBag size={20} />
-                    <span className="ml-2">Admin</span>
-                  </Link>
-                )}
-                <button
-                  onClick={() => signOut()}
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  <LogOut size={20} />
-                  <span className="ml-2">Logout</span>
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => setIsRegisterOpen(true)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  Register
-                </button>
-                <button
-                  onClick={() => setIsLoginOpen(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Login
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
         {/* Login/Register Panels */}
         <LoginPanel isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
         <RegisterPanel isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} />
@@ -427,4 +313,3 @@ export default function Navbar() {
       </div>
     </nav>
   );
-}

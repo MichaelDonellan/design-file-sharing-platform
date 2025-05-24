@@ -69,8 +69,9 @@ export default function Upload() {
   const [store, setStore] = useState<Store | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<'Fonts' | 'Logos' | 'Templates' | 'Icons' | 'UI Kits'>('Templates');
-  const [subcategory, setSubcategory] = useState<string>('');
+  const [category, setCategory] = useState<'SVGs' | 'Images' | 'Fonts' | 'Bundles' | 'Templates' | 'Laser Cutting' | 'Sublimation'>('SVGs');
+  // No subcategories for new categories
+  // const [subcategory, setSubcategory] = useState<string>('');
   const [price, setPrice] = useState<number | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');

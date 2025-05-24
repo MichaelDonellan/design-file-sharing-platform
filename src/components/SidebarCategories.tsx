@@ -1,19 +1,16 @@
 import { Link } from 'react-router-dom';
 
 const designCategories = [
-  { name: 'Crafters', count: 2115000 },
-  { name: 'Graphics', count: 505900 },
-  { name: 'Photos', count: 37800 },
-  { name: 'Add ons', count: 10800 },
-  { name: 'Templates', count: 37100 },
+  { name: 'SVGs', count: 0 },
+  { name: 'Images', count: 0 },
+  { name: 'Fonts', count: 0 },
+  { name: 'Bundles', count: 0 },
+  { name: 'Templates', count: 0 },
+  { name: 'Laser Cutting', count: 0 },
+  { name: 'Sublimation', count: 0 },
 ];
 
-const fontCategories = [
-  { name: 'Regular', count: 10300 },
-  { name: 'Script Fonts', count: 12600 },
-  { name: 'Seasonal', count: 1900 },
-  { name: 'Web Fonts', count: 6400 },
-];
+const fontCategories: { name: string; count: number }[] = [];
 
 export default function SidebarCategories() {
   return (

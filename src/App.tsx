@@ -1,6 +1,9 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 import Home from './pages/Home';
 import DesignDetail from './pages/DesignDetail';
 import DemoDesignDetail from './pages/DemoDesignDetail';
@@ -115,6 +118,8 @@ function App() {
                 <Route path="/payment/success" element={<PaymentSuccess />} />
                 <Route path="/plus-library" element={<PlusLibrary />} />
                 {/* Admin Routes */}
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
                 <Route
                   path="/admin"
                   element={
@@ -128,6 +133,7 @@ function App() {
           </div>
         </BrowserRouter>
         <ToastContainer position={"top-right"} />
+        <Footer />
       </div>
     </AuthProvider>
   );
