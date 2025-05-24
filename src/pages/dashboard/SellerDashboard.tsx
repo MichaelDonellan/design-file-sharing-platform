@@ -72,14 +72,7 @@ export default function SellerDashboard() {
       channel.unsubscribe && channel.unsubscribe();
     };
   }, [user, listings]);
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [listings, setListings] = useState<ListingWithRevenue[]>([]);
-  const [favorites, setFavorites] = useState<number>(0);
-  const [totalRevenue, setTotalRevenue] = useState<number>(0);
-  const [totalViews, setTotalViews] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
-  const [hasStore, setHasStore] = useState(false);
+
 
   useEffect(() => {
     if (!user) {
