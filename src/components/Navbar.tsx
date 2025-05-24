@@ -156,25 +156,6 @@ export default function Navbar() {
     </header>
   );
 }
-        {/* Login/Register Panels */}
-        <LoginPanel isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
-        <RegisterPanel isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} />
-
-        {/* Mobile menu */}
-        <div className={`lg:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
-          <div className="px-2 pt-2 pb-3 space-y-1">
-            {user ? (
-              <>
-                {/* Profile Section */}
-                <div className="border-b border-gray-200 pb-2 mb-2">
-                  <div className="px-3 py-2 text-sm font-medium text-gray-500">
-                    My Account
-                  </div>
-                  <Link
-                    to="/dashboard/profile"
-                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
                     <User size={20} />
                     <span>Profile</span>
                   </Link>
