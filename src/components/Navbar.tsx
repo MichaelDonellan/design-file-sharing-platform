@@ -156,25 +156,6 @@ export default function Navbar() {
     </header>
   );
 }
-                    <User size={20} />
-                    <span>Profile</span>
-                  </Link>
-                  {hasStore && (
-                    <Link
-                      to="/dashboard/seller"
-                      className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <ShoppingBag size={20} />
-                      <span>Seller Dashboard</span>
-                    </Link>
-                  )}
-                  <Link
-                    to="/dashboard/store"
-                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-md"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Store size={20} />
                     <span>Store</span>
                   </Link>
                   <Link
