@@ -41,7 +41,6 @@ export default function Navbar() {
     { name: "Photos", to: "/categories?main=Photos" },
     { name: "POD", to: "/pod" },
     { name: "Bundles", to: "/bundles" },
-    { name: "Studio", to: "/studio" },
     { name: "Free Downloads", to: "/free-downloads" },
   ];
 
@@ -114,7 +113,7 @@ export default function Navbar() {
       {/* Bottom Row - Main Links */}
       <nav className="w-full bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto flex items-center px-4 overflow-x-auto scrollbar-hide justify-between">
-          <div className="flex items-center">
+          <div className="flex items-center justify-end w-full">
             {mainLinks.map(link => (
               <Link
                 key={link.name}
