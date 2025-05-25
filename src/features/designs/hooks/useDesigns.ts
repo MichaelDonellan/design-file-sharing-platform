@@ -35,7 +35,7 @@ export function useDesigns(): UseDesignsResult {
 
       if (designsData) {
         const designsByCategory = designsData.reduce((acc, design) => {
-          const category = design.is_freebie ? 'Freebies' : design.category;
+          const category = design.is_free_download ? 'Free Downloads' : design.category;
           if (!acc[category]) {
             acc[category] = [];
           }
@@ -50,7 +50,7 @@ export function useDesigns(): UseDesignsResult {
           'Illustrations': 'Illustrations',
           'Mockups': 'Mockups', 
           'Templates': 'Templates',
-          'Freebies': 'Freebies'
+          'Free Downloads': 'Free Downloads'
         };
         
         Object.keys(CATEGORIES).forEach(category => {

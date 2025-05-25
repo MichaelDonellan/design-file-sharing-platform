@@ -8,7 +8,7 @@ interface DownloadButtonProps {
   filePath?: string;
   fileName?: string;
   price: number;
-  isFreebie: boolean;
+  isFreeDownload: boolean;
   className?: string;
   onDownloadStarted?: () => void;
   onDownloadComplete?: () => void;
@@ -26,7 +26,7 @@ export default function DownloadButton({
   filePath,
   fileName = 'design-file.zip',
   price,
-  isFreebie,
+  isFreeDownload,
   className = '',
   onDownloadStarted,
   onDownloadComplete,
@@ -111,7 +111,7 @@ export default function DownloadButton({
   // Don't render button if user doesn't have permission
   if (!canDownload) {
     // For paid designs that haven't been purchased, don't show download button
-    if (price > 0 && !isFreebie) {
+    if (price > 0 && !isFreeDownload) {
       return null;
     }
     

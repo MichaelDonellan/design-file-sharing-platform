@@ -279,7 +279,7 @@ export default function CategoriesPage() {
                       <DownloadButton
                         designId={design.id}
                         price={design.price}
-                        isFreebie={design.is_freebie}
+                        isFreeDownload={design.is_free_download}
                         className="w-full"
                       />
                     </div>

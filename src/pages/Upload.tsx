@@ -355,7 +355,7 @@ export default function Upload() {
           price: price || 0,
           currency: store.currency || 'USD',
           tags: tags.length > 0 ? tags : null,
-          is_freebie: !price || price === 0,
+          is_free_download: !price || price === 0,
         })
         .select()
         .single();

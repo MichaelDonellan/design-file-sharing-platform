@@ -32,23 +32,7 @@ export default function Navbar() {
     { name: "Learn", to: "/learn" },
     { name: "Studio", to: "/studio" },
     { name: "Subscription", to: "/subscription" },
-  ];
-
-  // New horizontal category links
-  const navbarCategories = [
-    'SVGs',
-    'Images',
-    'Fonts',
-    'Bundles',
-    'Templates',
-    'Laser Cutting',
-    'Sublimation',
-  ];
-
-  const rightLinks = [
-    { name: "Enterprise", to: "/enterprise" },
-    { name: "Freebies", to: "/freebies" },
-    { name: "Gifts", to: "/gifts" },
+    { name: "Free Downloads", to: "/free-downloads" },
   ];
 
   function handleSearch(e: React.FormEvent) {

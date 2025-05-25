@@ -15,7 +15,7 @@ export interface Design {
   average_rating?: number;
   price?: number;
   currency?: string;
-  is_freebie: boolean;
+  FreeDownloads: boolean;
 }
 
 export interface User {

@@ -174,7 +174,7 @@ export default function EditListing() {
           price: listing.price,
           category: listing.category,
           tags: listing.tags,
-          is_freebie: listing.is_freebie,
+          is_free_download: listing.is_free_download,
           file_type: listing.file_type
         })
         .eq('id', listing.id);
@@ -361,16 +361,16 @@ export default function EditListing() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Freebie</label>
+          <label className="block text-sm font-medium text-gray-700">Free Download</label>
           <div className="mt-1">
             <label className="inline-flex items-center">
               <input
                 type="checkbox"
-                checked={listing.is_freebie}
-                onChange={(e) => setListing({ ...listing, is_freebie: e.target.checked })}
+                checked={listing.is_free_download}
+                onChange={(e) => setListing({ ...listing, is_free_download: e.target.checked })}
                 className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
-              <span className="ml-2 text-sm">Is this a freebie?</span>
+              <span className="ml-2 text-sm">Is this a free download?</span>
             </label>
           </div>
         </div>
@@ -397,9 +397,9 @@ export default function EditListing() {
               step="0.01"
               value={listing.price || ''}
               onChange={(e) => setListing({ ...listing, price: e.target.value ? parseFloat(e.target.value) : 0 })}
-              className={`flex-1 block w-full rounded-none rounded-r-md min-w-0 border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${listing.is_freebie ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-              required={!listing.is_freebie}
-              disabled={listing.is_freebie}
+              className={`flex-1 block w-full rounded-none rounded-r-md min-w-0 border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${listing.is_free_download ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              required={!listing.is_free_download}
+              disabled={listing.is_free_download}
             />
           </div>
         </div>
@@ -408,7 +408,7 @@ export default function EditListing() {
           <label className="block text-sm font-medium text-gray-700">Category</label>
           <select
             value={listing.category}
-            onChange={(e) => setListing({ ...listing, category: e.target.value as 'Fonts' | 'Logos' | 'Templates' | 'Icons' | 'UI Kits' | 'Freebies' })}
+            onChange={(e) => setListing({ ...listing, category: e.target.value as 'Fonts' | 'Logos' | 'Templates' | 'Icons' | 'UI Kits' | 'Free Downloads' })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             required
           >
@@ -418,7 +418,7 @@ export default function EditListing() {
             <option value="Templates">Templates</option>
             <option value="Icons">Icons</option>
             <option value="UI Kits">UI Kits</option>
-            <option value="Freebies">Freebies</option>
+            <option value="Free Downloads">Free Downloads</option>
           </select>
         </div>
 

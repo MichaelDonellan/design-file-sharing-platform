@@ -49,7 +49,7 @@ export default function Categories() {
 
         if (designsData) {
           const designsByCategory = designsData.reduce((acc, design) => {
-            const category = design.is_freebie ? 'Freebies' : design.category;
+            const category = design.is_free_download ? 'Free Downloads' : design.category;
             if (!acc[category]) {
               acc[category] = [];
             }

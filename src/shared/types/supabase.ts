@@ -17,7 +17,7 @@ export interface Database {
           user_id: string;
           price: number;
           category: string;
-          is_freebie: boolean;
+          is_free_download: boolean;
           created_at: string;
           updated_at: string;
           downloads: number;
@@ -31,7 +31,7 @@ export interface Database {
           user_id: string;
           price?: number;
           category: string;
-          is_freebie?: boolean;
+          is_free_download?: boolean;
           created_at?: string;
           updated_at?: string;
           downloads?: number;
@@ -45,7 +45,7 @@ export interface Database {
           user_id?: string;
           price?: number;
           category?: string;
-          is_freebie?: boolean;
+          is_free_download?: boolean;
           created_at?: string;
           updated_at?: string;
           downloads?: number;

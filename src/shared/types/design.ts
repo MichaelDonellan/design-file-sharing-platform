@@ -5,7 +5,7 @@ export interface Design {
   user_id: string;
   price: number;
   category: string;
-  is_freebie: boolean;
+  is_free_download: boolean;
   created_at: string;
   updated_at: string;
   downloads: number;
@@ -55,5 +55,5 @@ export const CATEGORIES = {
   'Illustrations': 'Illustrations',
   'Mockups': 'Mockups', 
   'Templates': 'Templates',
-  'Freebies': 'Freebies'
+  'Free Downloads': 'Free Downloads'
 };

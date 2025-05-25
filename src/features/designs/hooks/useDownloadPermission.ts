@@ -36,7 +36,7 @@ export function useDownloadPermission(): UseDownloadPermissionResult {
         // No user logged in, can only download free products
         const { data: designData, error: designError } = await supabase
           .from('designs')
-          .select('price, is_freebie')
+          .select('price, is_free_download')
           .eq('id', designId)
           .single();
         
@@ -45,7 +45,7 @@ export function useDownloadPermission(): UseDownloadPermissionResult {
         }
         
         // Can download if it's free
-        const canDownload = designData.is_freebie || designData.price === 0;
+        const canDownload = designData.is_free_download || designData.price === 0;
         setCanDownload(canDownload);
         return canDownload;
       }
@@ -53,7 +53,7 @@ export function useDownloadPermission(): UseDownloadPermissionResult {
       // User is logged in - check design details
       const { data: designData, error: designError } = await supabase
         .from('designs')
-        .select('price, is_freebie, user_id')
+        .select('price, is_free_download, user_id')
         .eq('id', designId)
         .single();
       
@@ -62,7 +62,7 @@ export function useDownloadPermission(): UseDownloadPermissionResult {
       }
       
       // If design is free or user is the owner, allow download
-      if (designData.is_freebie || designData.price === 0 || designData.user_id === user.id) {
+      if (designData.is_free_download || designData.price === 0 || designData.user_id === user.id) {
         setCanDownload(true);
         return true;
       }

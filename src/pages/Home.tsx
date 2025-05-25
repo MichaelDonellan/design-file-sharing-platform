@@ -210,7 +210,7 @@ const mockupMap = mockupsData.reduce((acc, mockup) => {
 
       <div className="flex-1">
         <div className="mb-8 space-y-4">
-          <h1 className="text-3xl font-bold">Browse Designs</h1>
+          <h1 className="text-3xl font-bold">New Arrivals</h1>
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
