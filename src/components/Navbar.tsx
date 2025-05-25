@@ -18,6 +18,22 @@ export default function Navbar() {
   // Example language state, can be expanded
   const [language] = useState("EN");
 
+  const navbarCategories = [
+    "Fonts",
+    "Images",
+    "3D Crafts",
+    "Crafts",
+    "Needlework",
+    "Photos",
+    "Tools",
+    "POD",
+    "Bundles",
+    "Learn",
+    "Studio",
+    "Subscription",
+    "Free Downloads"
+  ];
+
   const mainLinks = [
     // Main links remain unchanged for now; category links will be added below
     { name: "Fonts", to: "/categories?main=Fonts" },
