@@ -35,19 +35,13 @@ export default function Navbar() {
   ];
 
   const mainLinks = [
-    // Main links remain unchanged for now; category links will be added below
     { name: "Fonts", to: "/categories?main=Fonts" },
     { name: "Images", to: "/categories?main=Images" },
-    { name: "3D Crafts", to: "/categories?main=3D%20Crafts" },
     { name: "Crafts", to: "/categories?main=Crafts" },
-    { name: "Needlework", to: "/categories?main=Needlework" },
     { name: "Photos", to: "/categories?main=Photos" },
-    { name: "Tools", to: "/tools" },
     { name: "POD", to: "/pod" },
     { name: "Bundles", to: "/bundles" },
-    { name: "Learn", to: "/learn" },
     { name: "Studio", to: "/studio" },
-    { name: "Subscription", to: "/subscription" },
     { name: "Free Downloads", to: "/free-downloads" },
   ];
 
@@ -143,18 +137,7 @@ export default function Navbar() {
             ))}
           </div>
         </div>
-        {/* Category Links Row */}
-        <div className="max-w-7xl mx-auto flex items-center px-4 overflow-x-auto scrollbar-hide border-t border-gray-100 bg-white">
-          {navbarCategories.map(cat => (
-            <Link
-              key={cat}
-              to={`/category/${cat.toLowerCase().replace(/ /g, '-')}`}
-              className="py-2 px-3 text-gray-600 hover:text-blue-600 font-medium text-sm whitespace-nowrap"
-            >
-              {cat}
-            </Link>
-          ))}
-        </div>
+
       </nav>
       {/* Login/Register Panels */}
       <LoginPanel isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
