@@ -35,6 +35,12 @@ export default function Navbar() {
     { name: "Free Downloads", to: "/free-downloads" },
   ];
 
+  // Define rightLinks to prevent ReferenceError
+  const rightLinks: { name: string; to: string }[] = [
+  { name: "Help", to: "/help" },
+  { name: "Contact Us", to: "/contact" },
+];
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (search.trim()) {
