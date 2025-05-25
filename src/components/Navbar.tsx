@@ -18,22 +18,6 @@ export default function Navbar() {
   // Example language state, can be expanded
   const [language] = useState("EN");
 
-  const navbarCategories = [
-    "Fonts",
-    "Images",
-    "3D Crafts",
-    "Crafts",
-    "Needlework",
-    "Photos",
-    "Tools",
-    "POD",
-    "Bundles",
-    "Learn",
-    "Studio",
-    "Subscription",
-    "Free Downloads"
-  ];
-
   const mainLinks = [
     { name: "Fonts", to: "/categories?main=Fonts" },
     { name: "Images", to: "/categories?main=Images" },
@@ -43,6 +27,7 @@ export default function Navbar() {
     { name: "Bundles", to: "/bundles" },
     { name: "Free Downloads", to: "/free-downloads" },
   ];
+
 
   // Define rightLinks to prevent ReferenceError
   const rightLinks: { name: string; to: string }[] = [
@@ -113,7 +98,7 @@ export default function Navbar() {
       {/* Bottom Row - Main Links */}
       <nav className="w-full bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto flex items-center px-4 overflow-x-auto scrollbar-hide justify-between">
-          <div className="flex items-center justify-end w-full">
+          <div className="flex items-center ml-12">
             {mainLinks.map(link => (
               <Link
                 key={link.name}
