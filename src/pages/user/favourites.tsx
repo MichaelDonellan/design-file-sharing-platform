@@ -57,6 +57,12 @@ const FavouritesPage: React.FC = () => {
             } else if (design.thumbnail_url) {
               image = design.thumbnail_url;
             }
+            console.log('Mapped favorite:', {
+              design_id: design.id,
+              favorite_id: fav.id || fav.favorite_id || fav.design_id,
+              name: design.name
+            });
+            
             return {
               id: design.id,
               name: design.name,
@@ -65,7 +71,7 @@ const FavouritesPage: React.FC = () => {
               category: design.category || '',
               is_free: design.price === 0,
               price: design.price,
-              favorite_id: fav.id // store favorite row id for removal
+              favorite_id: fav.id || fav.favorite_id || fav.design_id // fallback to fav.design_id if fav.id is undefined
             };
           })
         );
@@ -81,15 +87,28 @@ const FavouritesPage: React.FC = () => {
   // Remove from favourites handler
   const handleRemove = async (favorite_id: string) => {
     try {
+      console.log('Starting removal of favorite_id:', favorite_id);
+      console.log('Current products:', products);
+      
+      if (!favorite_id) {
+        throw new Error('No favorite ID provided');
+      }
+      
       setRemoving(favorite_id);
       
       // Get product before removing from state
       const product = products.find(p => p.favorite_id === favorite_id);
       if (!product) {
+        console.error('Product not found in state for favorite_id:', favorite_id);
         throw new Error('Favorite not found');
       }
       
-      console.log('Deleting favorite with ID:', favorite_id);
+      console.log('Deleting favorite:', {
+        favorite_id,
+        product_id: product.id,
+        product_name: product.name
+      });
+      
       const { error } = await supabase
         .from('design_favorites')
         .delete()
