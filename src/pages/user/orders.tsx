@@ -45,62 +45,36 @@ const UserOrders: React.FC = () => {
           return;
         }
 
-        // Fetch both purchases and free downloads in parallel
-        const [purchasesResult, downloadsResult] = await Promise.all([
-          // Fetch paid purchases
-          supabase
-            .from('purchases')
-            .select(`
+        // Fetch all purchases (both paid and free)
+        const { data: purchasesData, error: purchasesError } = await supabase
+          .from('purchases')
+          .select(`
+            id,
+            created_at,
+            design_id,
+            amount,
+            currency,
+            status,
+            designs:designs!inner(
               id,
-              created_at,
-              design_id,
-              amount,
+              name,
+              description,
+              file_type,
+              category,
+              price,
               currency,
-              status,
-              designs:designs!inner(
-                id,
-                name,
-                description,
-                file_type,
-                category,
-                price,
-                currency,
-                average_rating
-              )
-            `)
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false }),
-          
-          // Fetch free downloads
-          supabase
-            .from('downloads')
-            .select(`
-              id,
-              created_at,
-              design_id,
-              designs:designs!inner(
-                id,
-                name,
-                description,
-                file_type,
-                category,
-                price,
-                currency,
-                average_rating,
-                is_free_download
-              )
-            `)
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-        ]);
+              average_rating,
+              is_free_download
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-        const [purchasesData, downloadsData] = [purchasesResult.data || [], downloadsResult.data || []];
-        if (purchasesResult.error) throw purchasesResult.error;
-        if (downloadsResult.error) throw downloadsResult.error;
+        if (purchasesError) throw purchasesError;
 
-        // Transform purchases
+        // Transform purchases and include free download info
         const transformedPurchases = await Promise.all(
-          purchasesData.map(async (purchase: any) => {
+          (purchasesData || []).map(async (purchase: any) => {
             const { data: files } = await supabase
               .from('design_files')
               .select('id, file_path, file_type')
@@ -108,45 +82,23 @@ const UserOrders: React.FC = () => {
               .order('display_order', { ascending: true })
               .limit(1);
 
+            // Check if this was a free download
+            const isFree = purchase.designs?.is_free_download || purchase.amount === 0;
+
             return {
               ...purchase,
-              design: purchase.designs,
+              design: {
+                ...purchase.designs,
+                is_free_download: isFree
+              },
               design_id: purchase.design_id,
               design_files: files || [],
-              is_free: false
+              is_free: isFree
             };
           })
         );
 
-        // Transform free downloads to match purchases format
-        const transformedDownloads = await Promise.all(
-          downloadsData.map(async (download: any) => {
-            const { data: files } = await supabase
-              .from('design_files')
-              .select('id, file_path, file_type')
-              .eq('design_id', download.design_id)
-              .order('display_order', { ascending: true })
-              .limit(1);
-
-            return {
-              id: download.id,
-              created_at: download.created_at,
-              design_id: download.design_id,
-              design: download.designs,
-              amount: 0,
-              currency: 'USD',
-              status: 'completed',
-              design_files: files || [],
-              is_free: true
-            };
-          })
-        );
-
-        // Combine and sort by date (newest first)
-        const allItems = [...transformedPurchases, ...transformedDownloads]
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-        setPurchases(allItems);
+        setPurchases(transformedPurchases);
       } catch (err) {
         console.error('Error fetching purchases:', err);
         setError('Failed to load your orders');
