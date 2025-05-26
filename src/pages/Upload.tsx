@@ -10,17 +10,47 @@ import { toast } from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-const ALLOWED_DESIGN_TYPES: Record<string, string[]> = {
-  'SVGs': ['.svg'],
-  'Images': ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
-  'Fonts': ['.ttf', '.otf', '.woff', '.woff2'],
-  'Templates': ['.zip', '.psd', '.ai', '.pdf'],
-  'Logos': ['.svg', '.png', '.ai', '.psd'],
-  'Icons': ['.svg', '.png'],
-  'UI Kits': ['.zip', '.sketch', '.fig', '.xd'],
-  'Bundles': ['.zip', '.rar', '.7z'],
-  'Laser Cutting': ['.svg', '.dxf', '.ai', '.eps', '.pdf'],
-  'Sublimation': ['.png', '.psd', '.tif', '.tiff']
+const ALLOWED_DESIGN_TYPES: Record<string, { extensions: string[], mimeTypes: string[] }> = {
+  'SVGs': { 
+    extensions: ['.svg'],
+    mimeTypes: ['image/svg+xml']
+  },
+  'Images': { 
+    extensions: ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
+    mimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+  },
+  'Fonts': { 
+    extensions: ['.ttf', '.otf', '.woff', '.woff2'],
+    mimeTypes: ['font/ttf', 'font/otf', 'font/woff', 'font/woff2']
+  },
+  'Templates': { 
+    extensions: ['.zip', '.psd', '.ai', '.pdf'],
+    mimeTypes: ['application/zip', 'application/psd', 'application/illustrator', 'application/pdf']
+  },
+  'Logos': { 
+    extensions: ['.svg', '.png', '.ai', '.psd'],
+    mimeTypes: ['image/svg+xml', 'image/png', 'application/illustrator', 'application/psd']
+  },
+  'Icons': { 
+    extensions: ['.svg', '.png'],
+    mimeTypes: ['image/svg+xml', 'image/png']
+  },
+  'UI Kits': { 
+    extensions: ['.zip', '.sketch', '.fig', '.xd'],
+    mimeTypes: ['application/zip', 'application/sketch', 'application/fig', 'application/xd']
+  },
+  'Bundles': { 
+    extensions: ['.zip', '.rar', '.7z'],
+    mimeTypes: ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed']
+  },
+  'Laser Cutting': { 
+    extensions: ['.svg', '.dxf', '.ai', '.eps', '.pdf'],
+    mimeTypes: ['image/svg+xml', 'application/dxf', 'application/illustrator', 'application/postscript', 'application/pdf']
+  },
+  'Sublimation': { 
+    extensions: ['.png', '.psd', '.tif', '.tiff'],
+    mimeTypes: ['image/png', 'application/psd', 'image/tiff']
+  }
 };
 
 interface ValidationError {
@@ -133,7 +163,7 @@ export default function Upload() {
 
       // Check file types for design files
       if (type === 'design') {
-        const allowedExtensions = ALLOWED_DESIGN_TYPES[category];
+        const { extensions: allowedExtensions } = ALLOWED_DESIGN_TYPES[category];
         const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
         
         if (!allowedExtensions.includes(fileExtension)) {
@@ -168,9 +198,10 @@ export default function Upload() {
       errors.push({ field: 'description', message: 'Description is required' });
     }
 
-    if (!subcategory) {
-      errors.push({ field: 'subcategory', message: 'Please select a subcategory' });
-    }
+    // Subcategory is currently disabled
+    // if (!subcategory) {
+    //   errors.push({ field: 'subcategory', message: 'Please select a subcategory' });
+    // }
 
     // Validate files
     const designErrors = validateFiles(designFiles, 'design');
@@ -195,9 +226,9 @@ export default function Upload() {
       }
       setDesignFiles((prev) => [...prev, ...acceptedFiles]);
     },
-    accept: {
-      [ALLOWED_DESIGN_TYPES[category].join(',').replace(/\./g, '')]: ALLOWED_DESIGN_TYPES[category]
-    },
+    accept: Object.fromEntries(
+      ALLOWED_DESIGN_TYPES[category].mimeTypes.map(mimeType => [mimeType, []])
+    ),
     maxSize: MAX_FILE_SIZE,
   });
 
@@ -427,10 +458,10 @@ export default function Upload() {
           <div className="mb-1 font-semibold">Upload Requirements:</div>
           <ul className="list-disc ml-5">
             <li>
-              <span className="font-medium">Design files</span>: {ALLOWED_DESIGN_TYPES[category].join(', ')}
+              <span className="font-medium">Design files</span>: {ALLOWED_DESIGN_TYPES[category].extensions.join(', ')}
             </li>
             <li>
-              <span className="font-medium">Mockup images</span>: .png, .jpg, .jpeg, .gif
+              <span className="font-medium">Mockup images</span>: .png, .jpg, .jpeg, .gif, .webp
             </li>
             <li>
               <span className="font-medium">Max file size</span>: 50MB per file
@@ -566,7 +597,7 @@ export default function Upload() {
               Drag and drop design files here, or click to select files
             </p>
             <p className="text-sm text-gray-500 mt-2">
-              Allowed file types: {ALLOWED_DESIGN_TYPES[category].join(', ')}<br />
+              Allowed file types: {ALLOWED_DESIGN_TYPES[category].extensions.join(', ')}<br />
               <span className="text-xs">Max file size: 50MB per file</span>
             </p>
           </div>
