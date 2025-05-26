@@ -82,6 +82,10 @@ const FavouritesPage: React.FC = () => {
   const handleRemove = async (favorite_id: string) => {
     try {
       setRemoving(favorite_id);
+      
+      // Get product name before removing from state
+      const productName = products.find(p => p.favorite_id === favorite_id)?.name || 'Item';
+      
       const { error } = await supabase
         .from('design_favorites')
         .delete()
@@ -93,7 +97,6 @@ const FavouritesPage: React.FC = () => {
       setProducts(products => products.filter(p => p.favorite_id !== favorite_id));
       
       // Show success feedback
-      const productName = products.find(p => p.favorite_id === favorite_id)?.name || 'Item';
       alert(`${productName} removed from favorites`);
     } catch (error) {
       console.error('Error removing favorite:', error);
