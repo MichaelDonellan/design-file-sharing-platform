@@ -19,22 +19,33 @@ const FavouritesPage: React.FC = () => {
   const [removing, setRemoving] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('useEffect RUN');
     const fetchFavourites = async () => {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('Fetched user:', user, 'Error:', userError);
+      if (!user) { 
+        console.log('No user found, aborting fetch.');
+        setLoading(false); 
+        return; 
+      }
+      console.log('User found, proceeding with fetch...');
       // Join design_favorites with designs and users
       // Fetch all favorites for this user, join with design and user profile
+      console.log('Fetching favorites...');
       const { data: favs, error } = await supabase
         .from('design_favorites')
         .select(`design_id, designs(*), designs:user_id(full_name), designs:mockups(mockup_path)`) // join to designs, user profile, and mockups
         .eq('user_id', user.id);
+      console.log('Favorites fetched.');
       if (error) {
+        console.log('Supabase error:', error);
         setLoading(false);
         return;
       }
       console.log('RAW FAVS:', favs, error);
       if (favs) {
+        console.log('Mapping favorites...');
         setProducts(
           favs.map((fav: any) => {
             const design = fav.designs;
