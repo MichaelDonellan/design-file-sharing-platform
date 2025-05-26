@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { Link } from 'react-router-dom';
-import { User, Settings, LogOut, Shield, Star, ShoppingBag, LayoutDashboard } from 'lucide-react';
+import { User, Store, Settings, LogOut, BarChart3, LineChart, Shield, Heart, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { Store as StoreType } from '../types';
@@ -46,29 +46,29 @@ export default function UserMenu() {
         leaveTo="transform opacity-0 scale-95"
       >
         <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-          <div className="px-1 py-1 flex flex-col gap-1">
+          <div className="px-1 py-1">
             <Menu.Item>
               {({ active }) => (
                 <Link
                   to="/dashboard/profile"
-                  className={`$
+                  className={`${
                     active ? 'bg-gray-100' : ''
                   } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
                 >
                   <User className="mr-2 h-5 w-5" />
-                  My Profile
+                  Profile
                 </Link>
               )}
             </Menu.Item>
             <Menu.Item>
               {({ active }) => (
                 <Link
-                  to="/dashboard/favorites"
-                  className={`$
+                  to="/user/favourites"
+                  className={`${
                     active ? 'bg-gray-100' : ''
                   } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
                 >
-                  <Star className="mr-2 h-5 w-5" />
+                  <Heart className="mr-2 h-5 w-5" />
                   Favorites
                 </Link>
               )}
@@ -76,8 +76,8 @@ export default function UserMenu() {
             <Menu.Item>
               {({ active }) => (
                 <Link
-                  to="/dashboard/orders"
-                  className={`$
+                  to="/user/orders"
+                  className={`${
                     active ? 'bg-gray-100' : ''
                   } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
                 >
@@ -86,69 +86,15 @@ export default function UserMenu() {
                 </Link>
               )}
             </Menu.Item>
-            <Menu.Item>
-              {({ active }) => (
-                <Link
-                  to="/dashboard/settings"
-                  className={`$
-                    active ? 'bg-gray-100' : ''
-                  } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
-                >
-                  <Settings className="mr-2 h-5 w-5" />
-                  Settings
-                </Link>
-              )}
-            </Menu.Item>
             {isAdmin && (
               <Menu.Item>
                 {({ active }) => (
                   <Link
-                    to="/admin"
-                    className={`$
+                    to="/dashboard/admin"
+                    className={`${
                       active ? 'bg-gray-100' : ''
                     } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
                   >
-                    <Shield className="mr-2 h-5 w-5" />
-                    Admin
-                  </Link>
-                )}
-              </Menu.Item>
-            )}
-            {store && (
-              <Menu.Item>
-                {({ active }) => (
-                  <Link
-                    to="/dashboard/seller"
-                    className={`$
-                      active ? 'bg-gray-100' : ''
-                    } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
-                  >
-                    <LayoutDashboard className="mr-2 h-5 w-5" />
-                    Seller Dashboard
-                  </Link>
-                )}
-              </Menu.Item>
-            )}
-          </div>
-          <div className="px-1 py-1">
-            <Menu.Item>
-              {({ active }) => (
-                <button
-                  onClick={() => signOut()}
-                  className={`$
-                    active ? 'bg-gray-100' : ''
-                  } group flex w-full items-center rounded-md px-2 py-2 text-sm text-red-600`}
-                >
-                  <LogOut className="mr-2 h-5 w-5" />
-                  Logout
-                </button>
-              )}
-            </Menu.Item>
-          </div>
-        </Menu.Items>
-      </Transition>
-    </Menu>
-  );
                     <Shield className="mr-2 h-5 w-5" />
                     Admin Dashboard
                   </Link>
@@ -192,6 +138,12 @@ export default function UserMenu() {
                       } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
                     >
                       <LineChart className="mr-2 h-5 w-5" />
+                      Insights
+                    </Link>
+                  )}
+                </Menu.Item>
+              </>
+            )}
             <Menu.Item>
               {({ active }) => (
                 <Link
@@ -205,36 +157,6 @@ export default function UserMenu() {
                 </Link>
               )}
             </Menu.Item>
-            {isAdmin && (
-              <Menu.Item>
-                {({ active }) => (
-                  <Link
-                    to="/admin"
-                    className={`${
-                      active ? 'bg-gray-100' : ''
-                    } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
-                  >
-                    <Shield className="mr-2 h-5 w-5" />
-                    Admin
-                  </Link>
-                )}
-              </Menu.Item>
-            )}
-            {store && (
-              <Menu.Item>
-                {({ active }) => (
-                  <Link
-                    to="/dashboard/seller"
-                    className={`${
-                      active ? 'bg-gray-100' : ''
-                    } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
-                  >
-                    <Shield className="mr-2 h-5 w-5" />
-                    Seller Dashboard
-                  </Link>
-                )}
-              </Menu.Item>
-            )}
           </div>
           <div className="px-1 py-1">
             <Menu.Item>

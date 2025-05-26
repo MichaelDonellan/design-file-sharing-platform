@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import UserMenu from './UserMenu';
 
 export default function TopNavBar({ user }) {
   return (
@@ -13,8 +12,10 @@ export default function TopNavBar({ user }) {
       </div>
       <div className="flex items-center space-x-4">
         <button className="bg-yellow-200 text-yellow-800 px-3 py-1 rounded font-semibold">Membership details</button>
-        <UserMenu />
+        <Link to="/account">
+          <img src={user?.avatar_url || '/default-avatar.png'} alt="Account" className="w-8 h-8 rounded-full border" />
+        </Link>
       </div>
     </nav>
   );
-}
+} 

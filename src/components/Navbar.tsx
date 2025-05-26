@@ -83,8 +83,7 @@ export default function Navbar() {
           {/* Auth Buttons */}
           {user ? (
             <>
-              <Link to="/dashboard/profile" className="px-3 py-1 text-gray-700 hover:text-blue-600 text-sm">Account</Link>
-              <button onClick={signOut} className="px-3 py-1 text-gray-700 hover:text-blue-600 text-sm">Logout</button>
+              <UserMenu />
             </>
           ) : (
             <>
