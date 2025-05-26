@@ -90,9 +90,10 @@ const FavouritesPage: React.FC = () => {
       }
       
       console.log('Deleting favorite with ID:', favorite_id);
-      const { error } = await supabase.rpc('delete_favorite', {
-        favorite_id: favorite_id
-      });
+      const { error } = await supabase
+        .from('design_favorites')
+        .delete()
+        .eq('id', favorite_id);
       
       if (error) {
         console.error('Supabase delete error:', error);
