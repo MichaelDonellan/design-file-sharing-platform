@@ -119,6 +119,9 @@ function App() {
                 />
                 <Route path="/payment/success" element={<PaymentSuccess />} />
                 <Route path="/plus-library" element={<PlusLibrary />} />
+                {/* User Routes */}
+                <Route path="/user/profile" element={<PrivateRoute><UserProfile /></PrivateRoute>} />
+                <Route path="/user/favourites" element={<PrivateRoute><FavouritesPage /></PrivateRoute>} />
                 {/* Admin Routes */}
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
