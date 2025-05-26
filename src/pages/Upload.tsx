@@ -10,12 +10,17 @@ import { toast } from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-const ALLOWED_DESIGN_TYPES = {
+const ALLOWED_DESIGN_TYPES: Record<string, string[]> = {
+  'SVGs': ['.svg'],
+  'Images': ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
   'Fonts': ['.ttf', '.otf', '.woff', '.woff2'],
   'Templates': ['.zip', '.psd', '.ai', '.pdf'],
   'Logos': ['.svg', '.png', '.ai', '.psd'],
   'Icons': ['.svg', '.png'],
   'UI Kits': ['.zip', '.sketch', '.fig', '.xd'],
+  'Bundles': ['.zip', '.rar', '.7z'],
+  'Laser Cutting': ['.svg', '.dxf', '.ai', '.eps', '.pdf'],
+  'Sublimation': ['.png', '.psd', '.tif', '.tiff']
 };
 
 interface ValidationError {
@@ -69,7 +74,7 @@ export default function Upload() {
   const [store, setStore] = useState<Store | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<'SVGs' | 'Images' | 'Fonts' | 'Bundles' | 'Templates' | 'Laser Cutting' | 'Sublimation'>('SVGs');
+  const [category, setCategory] = useState<keyof typeof ALLOWED_DESIGN_TYPES>('SVGs');
   // No subcategories for new categories
   // const [subcategory, setSubcategory] = useState<string>('');
   const [price, setPrice] = useState<number | null>(null);
@@ -103,7 +108,7 @@ export default function Upload() {
 
   // Reset subcategory when category changes
   useEffect(() => {
-    setSubcategory('');
+    // setSubcategory('');
   }, [category]);
 
   const validateFiles = (files: File[], type: 'design' | 'mockup'): ValidationError[] => {
@@ -117,7 +122,7 @@ export default function Upload() {
       return errors;
     }
 
-    files.forEach((file, index) => {
+    files.forEach((file) => {
       // Check file size
       if (file.size > MAX_FILE_SIZE) {
         errors.push({
@@ -190,10 +195,9 @@ export default function Upload() {
       }
       setDesignFiles((prev) => [...prev, ...acceptedFiles]);
     },
-    accept: ALLOWED_DESIGN_TYPES[category].reduce((acc, ext) => ({
-      ...acc,
-      [ext]: []
-    }), {}),
+    accept: {
+      [ALLOWED_DESIGN_TYPES[category].join(',').replace(/\./g, '')]: ALLOWED_DESIGN_TYPES[category]
+    },
     maxSize: MAX_FILE_SIZE,
   });
 
@@ -208,7 +212,7 @@ export default function Upload() {
       setMockupFiles((prev) => [...prev, ...acceptedFiles]);
     },
     accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif']
+      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp']
     },
     maxSize: MAX_FILE_SIZE,
   });
