@@ -13,6 +13,7 @@ interface Product {
 }
 
 const FavouritesPage: React.FC = () => {
+  console.log('FavouritesPage MOUNTED');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<string | null>(null);
