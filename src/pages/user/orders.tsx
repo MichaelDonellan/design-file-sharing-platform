@@ -64,7 +64,7 @@ const UserOrders: React.FC = () => {
               price,
               currency,
               average_rating,
-              is_free_download
+              price
             )
           `)
           .eq('user_id', user.id)
@@ -82,14 +82,15 @@ const UserOrders: React.FC = () => {
               .order('display_order', { ascending: true })
               .limit(1);
 
-            // Check if this was a free download
-            const isFree = purchase.designs?.is_free_download || purchase.amount === 0;
+            // Check if this was a free download (price is 0 or null)
+            const isFree = (purchase.designs?.price === 0 || purchase.designs?.price === null) || purchase.amount === 0;
 
             return {
               ...purchase,
               design: {
                 ...purchase.designs,
-                is_free_download: isFree
+                // Set price to 0 for free downloads for consistent display
+                price: isFree ? 0 : purchase.designs.price
               },
               design_id: purchase.design_id,
               design_files: files || [],
