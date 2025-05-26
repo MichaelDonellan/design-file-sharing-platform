@@ -89,21 +89,47 @@ export default function DownloadButton({
       link.click();
       document.body.removeChild(link);
       
+      // Get the file ID for tracking the download
+      const { data: fileData } = await supabase
+        .from('design_files')
+        .select('id')
+        .eq('design_id', designId)
+        .order('display_order', { ascending: true })
+        .limit(1)
+        .single();
+
       // Track download in database
-      await supabase.rpc('increment_download_count', { design_id: designId });
+      const { data: { user } } = await supabase.auth.getUser();
       
-      // Add entry to purchases table for free downloads
-      if (isFreeDownload || price === 0) {
-        const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Record the download in design_files_downloads
+        await supabase.from('design_files_downloads').insert({
+          design_file_id: fileData?.id,
+          user_id: user.id
+        });
         
-        if (user) {
-          await supabase.from('purchases').insert({
-            design_id: designId,
-            user_id: user.id,
-            amount: 0,
-            currency: 'USD',
-            status: 'completed'
-          });
+        // Update the downloads count
+        await supabase.rpc('increment_download_count', { design_id: designId });
+        
+        // Add entry to purchases table for free downloads if it doesn't exist
+        if (isFreeDownload || price === 0) {
+          // Check if purchase record already exists
+          const { data: existingPurchase } = await supabase
+            .from('purchases')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('design_id', designId)
+            .single();
+            
+          if (!existingPurchase) {
+            await supabase.from('purchases').insert({
+              design_id: designId,
+              user_id: user.id,
+              amount: 0,
+              currency: 'USD',
+              status: 'completed'
+            });
+          }
         }
       }
       
