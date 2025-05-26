@@ -52,7 +52,8 @@ const FavouritesPage: React.FC = () => {
             // Use mockup if available, else thumbnail, else placeholder
             let image = '/placeholder.png';
             if (design.design_mockups && design.design_mockups.length > 0 && design.design_mockups[0].mockup_path) {
-              image = design.design_mockups[0].mockup_path;
+              const { data } = supabase.storage.from('designs').getPublicUrl(design.design_mockups[0].mockup_path);
+              image = data.publicUrl || '/placeholder.png';
             } else if (design.thumbnail_url) {
               image = design.thumbnail_url;
             }
