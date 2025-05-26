@@ -13,6 +13,7 @@ import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import UserProfile from './pages/user/profile';
 import FavouritesPage from './pages/user/favourites';
+import UserOrders from './pages/user/orders';
 import Profile from './pages/dashboard/Profile';
 import Store from './pages/dashboard/Store';
 import Settings from './pages/dashboard/Settings';
@@ -122,6 +123,7 @@ function App() {
                 {/* User Routes */}
                 <Route path="/user/profile" element={<PrivateRoute><UserProfile /></PrivateRoute>} />
                 <Route path="/user/favourites" element={<PrivateRoute><FavouritesPage /></PrivateRoute>} />
+                <Route path="/user/orders" element={<PrivateRoute><UserOrders /></PrivateRoute>} />
                 {/* Admin Routes */}
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
