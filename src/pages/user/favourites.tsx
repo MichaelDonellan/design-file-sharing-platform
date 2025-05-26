@@ -35,7 +35,7 @@ const FavouritesPage: React.FC = () => {
       console.log('Fetching favorites...');
       const { data: favs, error } = await supabase
         .from('design_favorites')
-        .select(`design_id, designs(*), designs:user_id(full_name), designs:mockups(mockup_path)`) // join to designs, user profile, and mockups
+        .select(`design_id, designs(*), designs:mockup_path`) // join to designs and mockups only
         .eq('user_id', user.id);
       console.log('Favorites fetched.');
       if (error) {
