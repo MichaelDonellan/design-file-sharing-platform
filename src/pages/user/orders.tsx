@@ -72,37 +72,32 @@ const UserOrders: React.FC = () => {
 
         if (purchasesError) throw purchasesError;
 
-        // Get all designs the user has downloaded (from downloads table if it exists, or fallback to designs table)
+        // Get all designs the user has downloaded
         let downloadedDesigns = [];
         
         try {
-          // First try to get from downloads table if it exists
+          // First, try to get downloads from the design_files_downloads table
           const { data: downloadsData, error: downloadsError } = await supabase
             .from('design_files_downloads')
-            .select('design_files(design_id), created_at')
+            .select(`
+              created_at,
+              design_files!inner(
+                design_id,
+                designs!inner(*)
+              )
+            `)
             .eq('user_id', user.id);
             
-          if (!downloadsError && downloadsData && downloadsData.length > 0) {
-            // Get unique design IDs from downloads
-            const designIds = [...new Set(downloadsData.map((d: any) => d.design_files?.design_id).filter(Boolean))];
-            
-            if (designIds.length > 0) {
-              // Fetch the actual design details
-              const { data: designsData, error: designsError } = await supabase
-                .from('designs')
-                .select('*')
-                .in('id', designIds);
-                
-              if (!designsError && designsData) {
-                // Merge with download timestamps
-                downloadedDesigns = designsData.map((design: any) => ({
-                  ...design,
-                  created_at: downloadsData.find((d: any) => d.design_files?.design_id === design.id)?.created_at || design.created_at
-                }));
-              }
-            }
-          } else {
-            // Fallback to designs table if no downloads table or no downloads
+          if (!downloadsError && downloadsData) {
+            // Transform the data to match our expected format
+            downloadedDesigns = downloadsData.map((item: any) => ({
+              ...item.design_files.designs,
+              created_at: item.created_at || item.design_files.designs.created_at
+            }));
+          }
+          
+          // If no downloads found, fall back to the old method
+          if (downloadedDesigns.length === 0) {
             const { data: designsData, error: designsError } = await supabase
               .from('designs')
               .select('*')
@@ -114,7 +109,7 @@ const UserOrders: React.FC = () => {
             }
           }
         } catch (err) {
-          console.warn('Error fetching download history:', err);
+          console.error('Error fetching download history:', err);
           // Continue with empty array if there's an error
         }
 
@@ -153,45 +148,43 @@ const UserOrders: React.FC = () => {
         );
 
         // Add any downloaded designs that aren't in purchases
-        const additionalDownloads = await Promise.all(
-          downloadedDesigns
-            .filter((design: any) => 
-              !purchasesData?.some((p: any) => p.design_id === design.id)
-            )
-            .map(async (design: any) => {
-              const { data: files } = await supabase
-                .from('design_files')
-                .select('id, file_path, file_type')
-                .eq('design_id', design.id)
-                .order('display_order', { ascending: true })
-                .limit(1);
-                
-              // Get the design details including price
-              const { data: designDetails } = await supabase
-                .from('designs')
-                .select('price, currency')
-                .eq('id', design.id)
-                .single();
-
-              return {
-                id: `download_${design.id}`,
-                created_at: design.created_at,
-                design_id: design.id,
-                amount: 0,
-                currency: designDetails?.currency || 'USD',
-                status: 'completed',
-                design: {
-                  ...design,
-                  price: designDetails?.price,
-                  currency: designDetails?.currency || 'USD',
-                  is_free_download: !designDetails?.price || designDetails?.price === 0
-                },
-                design_files: files || [],
-                is_free: !designDetails?.price || designDetails?.price === 0,
-                is_downloaded: true
-              };
-            })
-        );
+        const additionalDownloads = [];
+        
+        for (const design of downloadedDesigns) {
+          try {
+            // Skip if this design is already in purchases
+            if (purchasesData?.some((p: any) => p.design_id === design.id)) {
+              continue;
+            }
+            
+            // Get the design files
+            const { data: files } = await supabase
+              .from('design_files')
+              .select('id, file_path, file_type')
+              .eq('design_id', design.id)
+              .order('display_order', { ascending: true })
+              .limit(1);
+              
+            // Create the download record
+            additionalDownloads.push({
+              id: `download_${design.id}`,
+              created_at: design.created_at,
+              design_id: design.id,
+              amount: 0,
+              currency: design.currency || 'USD',
+              status: 'completed',
+              design: {
+                ...design,
+                is_free_download: !design.price || design.price === 0
+              },
+              design_files: files || [],
+              is_free: !design.price || design.price === 0,
+              is_downloaded: true
+            });
+          } catch (err) {
+            console.error(`Error processing design ${design.id}:`, err);
+          }
+        }
 
         // Combine and sort all items by date
         const allItems = [...transformedPurchases, ...additionalDownloads]
