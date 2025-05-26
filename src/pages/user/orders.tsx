@@ -72,14 +72,51 @@ const UserOrders: React.FC = () => {
 
         if (purchasesError) throw purchasesError;
 
-        // Then, fetch the user's downloaded designs that might not be in purchases
-        const { data: downloadedDesigns, error: downloadsError } = await supabase
-          .from('designs')
-          .select('*')
-          .gt('downloads', 0)
-          .eq('user_id', user.id);
-
-        if (downloadsError) throw downloadsError;
+        // Get all designs the user has downloaded (from downloads table if it exists, or fallback to designs table)
+        let downloadedDesigns = [];
+        
+        try {
+          // First try to get from downloads table if it exists
+          const { data: downloadsData, error: downloadsError } = await supabase
+            .from('design_files_downloads')
+            .select('design_files(design_id), created_at')
+            .eq('user_id', user.id);
+            
+          if (!downloadsError && downloadsData && downloadsData.length > 0) {
+            // Get unique design IDs from downloads
+            const designIds = [...new Set(downloadsData.map((d: any) => d.design_files?.design_id).filter(Boolean))];
+            
+            if (designIds.length > 0) {
+              // Fetch the actual design details
+              const { data: designsData, error: designsError } = await supabase
+                .from('designs')
+                .select('*')
+                .in('id', designIds);
+                
+              if (!designsError && designsData) {
+                // Merge with download timestamps
+                downloadedDesigns = designsData.map((design: any) => ({
+                  ...design,
+                  created_at: downloadsData.find((d: any) => d.design_files?.design_id === design.id)?.created_at || design.created_at
+                }));
+              }
+            }
+          } else {
+            // Fallback to designs table if no downloads table or no downloads
+            const { data: designsData, error: designsError } = await supabase
+              .from('designs')
+              .select('*')
+              .gt('downloads', 0)
+              .eq('user_id', user.id);
+              
+            if (!designsError) {
+              downloadedDesigns = designsData || [];
+            }
+          }
+        } catch (err) {
+          console.warn('Error fetching download history:', err);
+          // Continue with empty array if there's an error
+        }
 
         // Transform purchases
         const transformedPurchases = await Promise.all(
@@ -117,7 +154,7 @@ const UserOrders: React.FC = () => {
 
         // Add any downloaded designs that aren't in purchases
         const additionalDownloads = await Promise.all(
-          (downloadedDesigns || [])
+          downloadedDesigns
             .filter((design: any) => 
               !purchasesData?.some((p: any) => p.design_id === design.id)
             )
@@ -128,17 +165,29 @@ const UserOrders: React.FC = () => {
                 .eq('design_id', design.id)
                 .order('display_order', { ascending: true })
                 .limit(1);
+                
+              // Get the design details including price
+              const { data: designDetails } = await supabase
+                .from('designs')
+                .select('price, currency')
+                .eq('id', design.id)
+                .single();
 
               return {
                 id: `download_${design.id}`,
                 created_at: design.created_at,
                 design_id: design.id,
                 amount: 0,
-                currency: 'USD',
+                currency: designDetails?.currency || 'USD',
                 status: 'completed',
-                design: design,
+                design: {
+                  ...design,
+                  price: designDetails?.price,
+                  currency: designDetails?.currency || 'USD',
+                  is_free_download: !designDetails?.price || designDetails?.price === 0
+                },
                 design_files: files || [],
-                is_free: true,
+                is_free: !designDetails?.price || designDetails?.price === 0,
                 is_downloaded: true
               };
             })
