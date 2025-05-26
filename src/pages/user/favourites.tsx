@@ -32,6 +32,7 @@ const FavouritesPage: React.FC = () => {
         setLoading(false);
         return;
       }
+      console.log('RAW FAVS:', favs, error);
       if (favs) {
         setProducts(
           favs.map((fav: any) => {
