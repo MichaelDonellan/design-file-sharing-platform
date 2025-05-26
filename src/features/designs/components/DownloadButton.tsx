@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
 import { useDownloadPermission } from '../hooks/useDownloadPermission';
 import { supabase } from '../../../services/supabase/client';
@@ -32,7 +32,7 @@ export default function DownloadButton({
   onDownloadComplete,
   onError
 }: DownloadButtonProps) {
-  const { canDownload, loading, error, checkPermission } = useDownloadPermission();
+  const { canDownload, loading, checkPermission } = useDownloadPermission();
   const [isChecking, setIsChecking] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
@@ -50,7 +50,7 @@ export default function DownloadButton({
       setDownloading(true);
       onDownloadStarted?.();
       
-      // If no filePath provided, fetch it from the database
+      // Fetch the file path if not provided
       let downloadPath = filePath;
       if (!downloadPath) {
         const { data: fileData, error: fileError } = await supabase
@@ -59,11 +59,16 @@ export default function DownloadButton({
           .eq('design_id', designId)
           .single();
           
-        if (fileError) {
+        if (fileError || !fileData?.file_path) {
           throw new Error('Could not find file to download');
         }
         
         downloadPath = fileData.file_path;
+      }
+      
+      // Ensure downloadPath is defined
+      if (!downloadPath) {
+        throw new Error('No file path available for download');
       }
       
       // Download file from Supabase storage
@@ -86,6 +91,21 @@ export default function DownloadButton({
       
       // Track download in database
       await supabase.rpc('increment_download_count', { design_id: designId });
+      
+      // Add entry to purchases table for free downloads
+      if (isFreeDownload || price === 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          await supabase.from('purchases').insert({
+            design_id: designId,
+            user_id: user.id,
+            amount: 0,
+            currency: 'USD',
+            status: 'completed'
+          });
+        }
+      }
       
       onDownloadComplete?.();
     } catch (err) {
