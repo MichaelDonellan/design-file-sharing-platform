@@ -50,7 +50,7 @@ export default function UserMenu() {
             <Menu.Item>
               {({ active }) => (
                 <Link
-                  to="/dashboard/profile"
+                  to="/user/profile"
                   className={`${
                     active ? 'bg-gray-100' : ''
                   } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
@@ -101,19 +101,21 @@ export default function UserMenu() {
                 )}
               </Menu.Item>
             )}
-            <Menu.Item>
-              {({ active }) => (
-                <Link
-                  to="/dashboard/store"
-                  className={`${
-                    active ? 'bg-gray-100' : ''
-                  } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
-                >
-                  <Store className="mr-2 h-5 w-5" />
-                  {store ? 'My Store' : 'Create Store'}
-                </Link>
-              )}
-            </Menu.Item>
+            {store && (
+              <Menu.Item>
+                {({ active }) => (
+                  <Link
+                    to="/dashboard/store"
+                    className={`${
+                      active ? 'bg-gray-100' : ''
+                    } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
+                  >
+                    <Store className="mr-2 h-5 w-5" />
+                    My Store
+                  </Link>
+                )}
+              </Menu.Item>
+            )}
             {store && (
               <>
                 <Menu.Item>
