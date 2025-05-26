@@ -105,7 +105,6 @@ export default function Upload() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<keyof typeof ALLOWED_DESIGN_TYPES>('SVGs');
-  const [subcategory, setSubcategory] = useState<string>('');
   const [price, setPrice] = useState<number | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
@@ -135,10 +134,8 @@ export default function Upload() {
     checkStore();
   }, [user, navigate]);
 
-  // Reset subcategory when category changes
-  useEffect(() => {
-    setSubcategory('');
-  }, [category]);
+  // Category change handler
+  // Subcategory functionality removed
 
   const validateFiles = (files: File[], type: 'design' | 'mockup'): ValidationError[] => {
     const errors: ValidationError[] = [];
@@ -195,10 +192,6 @@ export default function Upload() {
 
     if (!description.trim()) {
       errors.push({ field: 'description', message: 'Description is required' });
-    }
-
-    if (!subcategory) {
-      errors.push({ field: 'subcategory', message: 'Please select a subcategory' });
     }
 
     // Validate files
@@ -381,7 +374,7 @@ export default function Upload() {
           name,
           description,
           category,
-          subcategory,
+          // subcategory field removed
           user_id: user.id,
           store_id: store.id,
           file_type: getFileType(category),
@@ -539,31 +532,13 @@ export default function Upload() {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as typeof category)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {Object.keys(CATEGORIES).map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">
-              Subcategory *
-            </label>
-            <select
-              value={subcategory}
-              onChange={(e) => setSubcategory(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select a subcategory</option>
-              {CATEGORIES[category].map((subcat) => (
-                <option key={subcat} value={subcat}>{subcat}</option>
-              ))}
-            </select>
-          </div>
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {Object.entries(CATEGORIES).map(([key, value]) => (
+              <option key={key} value={key}>{value}</option>
+            ))}
+          </select>
         </div>
 
         <div className="mb-4">
