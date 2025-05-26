@@ -45,7 +45,7 @@ const UserOrders: React.FC = () => {
           return;
         }
 
-        // First, fetch the purchases data without the is_free_download column
+        // First, fetch the user's purchases
         const { data: purchasesData, error: purchasesError } = await supabase
           .from('purchases')
           .select(`
@@ -63,7 +63,8 @@ const UserOrders: React.FC = () => {
               category,
               price,
               currency,
-              average_rating
+              average_rating,
+              downloads
             )
           `)
           .eq('user_id', user.id)
@@ -71,7 +72,16 @@ const UserOrders: React.FC = () => {
 
         if (purchasesError) throw purchasesError;
 
-        // Transform purchases and include free download info
+        // Then, fetch the user's downloaded designs that might not be in purchases
+        const { data: downloadedDesigns, error: downloadsError } = await supabase
+          .from('designs')
+          .select('*')
+          .gt('downloads', 0)
+          .eq('user_id', user.id);
+
+        if (downloadsError) throw downloadsError;
+
+        // Transform purchases
         const transformedPurchases = await Promise.all(
           (purchasesData || []).map(async (purchase: any) => {
             const { data: files } = await supabase
@@ -83,6 +93,13 @@ const UserOrders: React.FC = () => {
 
             // Check if this was a free download based on price
             const isFree = purchase.designs?.price === 0 || purchase.designs?.price === null || purchase.amount === 0;
+            
+            // Mark as downloaded if the design has downloads > 0
+            const isDownloaded = (purchasesData || []).some(
+              (d: any) => d.design_id === purchase.design_id && d.designs?.downloads > 0
+            ) || (downloadedDesigns || []).some(
+              (d: any) => d.id === purchase.design_id
+            );
 
             return {
               ...purchase,
@@ -92,12 +109,46 @@ const UserOrders: React.FC = () => {
               },
               design_id: purchase.design_id,
               design_files: files || [],
-              is_free: isFree
+              is_free: isFree,
+              is_downloaded: isDownloaded
             };
           })
         );
 
-        setPurchases(transformedPurchases);
+        // Add any downloaded designs that aren't in purchases
+        const additionalDownloads = await Promise.all(
+          (downloadedDesigns || [])
+            .filter((design: any) => 
+              !purchasesData?.some((p: any) => p.design_id === design.id)
+            )
+            .map(async (design: any) => {
+              const { data: files } = await supabase
+                .from('design_files')
+                .select('id, file_path, file_type')
+                .eq('design_id', design.id)
+                .order('display_order', { ascending: true })
+                .limit(1);
+
+              return {
+                id: `download_${design.id}`,
+                created_at: design.created_at,
+                design_id: design.id,
+                amount: 0,
+                currency: 'USD',
+                status: 'completed',
+                design: design,
+                design_files: files || [],
+                is_free: true,
+                is_downloaded: true
+              };
+            })
+        );
+
+        // Combine and sort all items by date
+        const allItems = [...transformedPurchases, ...additionalDownloads]
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        setPurchases(allItems);
       } catch (err) {
         console.error('Error fetching purchases:', err);
         setError('Failed to load your orders');
