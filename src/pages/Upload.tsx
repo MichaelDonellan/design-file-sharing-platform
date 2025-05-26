@@ -105,8 +105,7 @@ export default function Upload() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<keyof typeof ALLOWED_DESIGN_TYPES>('SVGs');
-  // No subcategories for new categories
-  // const [subcategory, setSubcategory] = useState<string>('');
+  const [subcategory, setSubcategory] = useState<string>('');
   const [price, setPrice] = useState<number | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
@@ -138,7 +137,7 @@ export default function Upload() {
 
   // Reset subcategory when category changes
   useEffect(() => {
-    // setSubcategory('');
+    setSubcategory('');
   }, [category]);
 
   const validateFiles = (files: File[], type: 'design' | 'mockup'): ValidationError[] => {
@@ -198,10 +197,9 @@ export default function Upload() {
       errors.push({ field: 'description', message: 'Description is required' });
     }
 
-    // Subcategory is currently disabled
-    // if (!subcategory) {
-    //   errors.push({ field: 'subcategory', message: 'Please select a subcategory' });
-    // }
+    if (!subcategory) {
+      errors.push({ field: 'subcategory', message: 'Please select a subcategory' });
+    }
 
     // Validate files
     const designErrors = validateFiles(designFiles, 'design');
