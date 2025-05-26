@@ -528,33 +528,33 @@ export default function Upload() {
           <div>
             <label className="block text-gray-700 font-medium mb-2">
               Category *
-          </label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value as typeof category)}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {Object.entries(CATEGORIES).map(([key, value]) => (
-              <option key={key} value={key}>{value}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">
-            Price ({store.currency || 'USD'})
-          </label>
-          <input
-            type="number"
-            value={price || ''}
-            onChange={(e) => setPrice(e.target.value ? Number(e.target.value) : null)}
-            min="0"
-            step="0.01"
-            placeholder="0.00 (Free)"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <p className="mt-1 text-sm text-gray-500">Leave empty or set to 0 for free download</p>
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as typeof category)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {Object.entries(CATEGORIES).map(([key, value]) => (
+                <option key={key} value={key}>{value}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-gray-700 font-medium mb-2">
+              Price ({store.currency || 'USD'})
+            </label>
+            <input
+              type="number"
+              value={price || ''}
+              onChange={(e) => setPrice(e.target.value ? Number(e.target.value) : null)}
+              min="0"
+              step="0.01"
+              placeholder="0.00 (Free)"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-sm text-gray-500">Leave empty or set to 0 for free download</p>
+          </div>
         </div>
 
         <div className="mb-4">
