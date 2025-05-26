@@ -51,8 +51,8 @@ const FavouritesPage: React.FC = () => {
             const design = fav.designs;
             // Use mockup if available, else thumbnail, else placeholder
             let image = '/placeholder.png';
-            if (design.mockups && design.mockups.length > 0 && design.mockups[0].mockup_path) {
-              image = design.mockups[0].mockup_path;
+            if (design.design_mockups && design.design_mockups.length > 0 && design.design_mockups[0].mockup_path) {
+              image = design.design_mockups[0].mockup_path;
             } else if (design.thumbnail_url) {
               image = design.thumbnail_url;
             }
@@ -92,7 +92,7 @@ const FavouritesPage: React.FC = () => {
 
   return (
     <div className="p-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6">
         {products.map(product => (
           <div key={product.id} className="bg-white rounded-lg shadow hover:shadow-lg transition relative">
             <img src={product.image} alt={product.name} className="w-full h-48 object-cover rounded-t-lg" />
