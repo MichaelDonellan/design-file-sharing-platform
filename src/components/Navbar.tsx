@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Upload, LogIn, PlusSquare, Menu, X, User, Store, Settings, LogOut, Tag, ShoppingBag } from 'lucide-react';
+import { Upload, LogIn, PlusSquare, Menu, X, User, Store, Settings, LogOut, Tag, ShoppingBag, Heart, Bell, ShoppingCart } from 'lucide-react';
 import UserMenu from './UserMenu';
 import { CATEGORIES } from '../types';
 import { useNavigate } from 'react-router-dom';
@@ -83,7 +83,21 @@ export default function Navbar() {
           {/* Auth Buttons */}
           {user ? (
             <>
-              <UserMenu />
+              <div className="flex items-center gap-6">
+                <Link to="/user/favourites" className="flex flex-col items-center text-gray-700 hover:text-blue-600">
+                  <Heart className="h-6 w-6 mb-1" />
+                  <span className="text-xs">Favorites</span>
+                </Link>
+                <Link to="/notifications" className="flex flex-col items-center text-gray-700 hover:text-blue-600">
+                  <Bell className="h-6 w-6 mb-1" />
+                  <span className="text-xs">Notifications</span>
+                </Link>
+                <Link to="/cart" className="flex flex-col items-center text-gray-700 hover:text-blue-600">
+                  <ShoppingCart className="h-6 w-6 mb-1" />
+                  <span className="text-xs">Cart</span>
+                </Link>
+                <UserMenu />
+              </div>
             </>
           ) : (
             <>
