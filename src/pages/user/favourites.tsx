@@ -80,23 +80,41 @@ const FavouritesPage: React.FC = () => {
 
   // Remove from favourites handler
   const handleRemove = async (favorite_id: string) => {
-    setRemoving(favorite_id);
-    const { error } = await supabase
-      .from('design_favorites')
-      .delete()
-      .eq('id', favorite_id);
-    if (!error) {
+    try {
+      setRemoving(favorite_id);
+      const { error } = await supabase
+        .from('design_favorites')
+        .delete()
+        .eq('id', favorite_id);
+      
+      if (error) throw error;
+      
+      // Remove from UI immediately for better UX
       setProducts(products => products.filter(p => p.favorite_id !== favorite_id));
+      
+      // Show success feedback
+      const productName = products.find(p => p.favorite_id === favorite_id)?.name || 'Item';
+      alert(`${productName} removed from favorites`);
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+      alert('Failed to remove from favorites. Please try again.');
+    } finally {
+      setRemoving(null);
     }
-    setRemoving(null);
   };
 
   return (
     <div className="p-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6">
         {products.map(product => (
-          <div key={product.id} className="bg-white rounded-lg shadow hover:shadow-lg transition relative">
-            <img src={product.image} alt={product.name} className="w-full h-48 object-cover rounded-t-lg" />
+          <div key={product.id} className="bg-white rounded-lg shadow hover:shadow-lg transition relative overflow-hidden">
+            <div className="relative pt-[100%] bg-gray-100">
+              <img 
+                src={product.image} 
+                alt={product.name} 
+                className="absolute top-0 left-0 w-full h-full object-cover" 
+              />
+            </div>
             {/* Red heart icon as a button */}
             <button
               className={`absolute top-3 right-3 text-red-500 text-2xl focus:outline-none ${removing === product.favorite_id ? 'opacity-50 cursor-not-allowed' : ''}`}
