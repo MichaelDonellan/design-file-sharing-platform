@@ -359,7 +359,7 @@ export default function SellerDashboard() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-medium text-gray-900">Your Designs</h2>
             <button
-              onClick={() => navigate('/dashboard/store')}
+              onClick={() => navigate('/dashboard/upload')}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 mr-2"
             >
               <Plus className="-ml-1 mr-2 h-5 w-5" />
