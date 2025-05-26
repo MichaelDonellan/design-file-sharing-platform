@@ -11,6 +11,8 @@ import Upload from './pages/Upload';
 import Login from './pages/Login';
 // Register page removed - using floating panel instead
 import ForgotPassword from './pages/ForgotPassword';
+import UserProfile from './pages/user/profile';
+import FavouritesPage from './pages/user/favourites';
 import Profile from './pages/dashboard/Profile';
 import Store from './pages/dashboard/Store';
 import Settings from './pages/dashboard/Settings';
