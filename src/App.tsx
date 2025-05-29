@@ -25,6 +25,13 @@ import { AuthProvider } from './context/AuthContext';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PlusLibrary from './pages/PlusLibrary';
 import Categories from './pages/Categories';
+import POD from './pages/POD';
+import Bundles from './pages/Bundles';
+import Fonts from './pages/Fonts';
+import Images from './pages/Images';
+import Crafts from './pages/Crafts';
+import Photos from './pages/Photos';
+import FreeDownloads from './pages/FreeDownloads';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import { ToastContainer } from 'react-toastify';
 import Files from './pages/Files';
@@ -48,6 +55,13 @@ function App() {
                 <Route path="/demo-design" element={<DemoDesignDetail />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/categories" element={<Categories />} />
+                <Route path="/bundles" element={<Bundles />} />
+                <Route path="/pod" element={<POD />} />
+                <Route path="/fonts" element={<Fonts />} />
+                <Route path="/images" element={<Images />} />
+                <Route path="/crafts" element={<Crafts />} />
+                <Route path="/photos" element={<Photos />} />
+                <Route path="/free-downloads" element={<FreeDownloads />} />
                 <Route path="/payment/success" element={<PaymentSuccess />} />
                 <Route path="/plus-library" element={<PlusLibrary />} />
                 <Route path="/files" element={<Files />} />

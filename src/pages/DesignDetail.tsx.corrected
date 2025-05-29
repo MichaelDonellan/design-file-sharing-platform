@@ -1,0 +1,431 @@
+// DesignDetail.tsx - Detail page for viewing design information
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
+import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
+import { Design, User, Store } from '../types';
+import { Download, Heart, ShoppingCart, Store as StoreIcon, Eye, Share2 } from 'lucide-react';
+
+interface DesignFile {
+  id: string;
+  design_id: string;
+  file_path: string;
+  file_name: string;
+  file_size: number;
+  file_type: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ExtendedDesign extends Design {
+  files: DesignFile[];
+  store: Store;
+  user: User;
+  price?: number;
+  category: string;
+  tags: string[];
+  views: number;
+  downloads: number;
+  favorites: number;
+  created_at: string;
+  store_name: string;
+  store_logo_url: string;
+}
+
+// Format price with currency
+const formatPrice = (amount: number): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount);
+};
+
+// Helper function to check if design can be downloaded
+const canDownloadDesign = (design: ExtendedDesign | null, hasPurchased: boolean): boolean => {
+  if (!design) return false;
+  return !design.price || design.price === 0 || hasPurchased;
+};
+
+const SUPPORTED_CURRENCIES = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+];
+
+const EXCHANGE_RATES: Record<string, number> = {
+  USD: 1,
+  EUR: 0.92,
+  GBP: 0.79,
+  CAD: 1.36,
+  AUD: 1.52,
+};
+
+export default function DesignDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user, currentUser } = useAuth();
+  const { addToCart, isInCart } = useCart();
+
+  const [design, setDesign] = useState<ExtendedDesign | null>(null);
+  const [files, setFiles] = useState<DesignFile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mockups, setMockups] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [tagRelatedDesigns, setTagRelatedDesigns] = useState<any[]>([]);
+  const [tagRelatedMockups, setTagRelatedMockups] = useState<Record<string, string>>({});
+  const [relatedDesigns, setRelatedDesigns] = useState<any[]>([]);
+  const [store, setStore] = useState<any>(null);
+
+  // Check if user has purchased the design
+  useEffect(() => {
+    const checkPurchaseStatus = async () => {
+      if (!currentUser || !design) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('purchases')
+          .select('id')
+          .eq('user_id', currentUser.id)
+          .eq('design_id', design.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error checking purchase status:', error);
+          return;
+        }
+
+        setHasPurchased(!!data);
+      } catch (err) {
+        console.error('Error in purchase status check:', err);
+      }
+    };
+
+    checkPurchaseStatus();
+  }, [currentUser, design]);
+
+  // Load design data
+  useEffect(() => {
+    const fetchDesign = async () => {
+      if (!id) return;
+      setLoading(true);
+      
+      try {
+        // Fetch design and related data
+      } catch (err) {
+        console.error('Error fetching design:', err);
+        setError('Failed to load design');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchDesign();
+  }, [id]);
+
+  // Handle add to cart
+  const handleAddToCart = () => {
+    if (!user) {
+      setIsLoginOpen(true);
+      return;
+    }
+    if (design) {
+      addToCart(design);
+      toast.success('Added to cart!');
+    }
+  };
+
+  // Handle download
+  const handleDownload = async () => {
+    if (!design) return;
+    
+    setIsProcessing(true);
+    
+    // Download functionality here
+  };
+
+  const getPublicUrl = (path: string) => {
+    if (!path) return '/placeholder.png';
+    return `https://rlldapmwdyeeoloivwfi.supabase.co/storage/v1/object/public/designs/${path}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !design) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-600 mb-4">{error || 'Design not found'}</div>
+        <button 
+          onClick={() => navigate(-1)}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
+
+  // Return the full UI
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div>
+        <div className="mb-8">
+          {/* Mockup carousel section */}
+          <div className="mb-8">
+            <div className="mb-6">
+              <div className="relative group">
+                <div className="swiper swiper-initialized swiper-horizontal rounded-lg overflow-hidden">
+                  <div className="swiper-wrapper">
+                    <div className="swiper-slide swiper-slide-active bg-gray-100" style={{ width: '339px' }}>
+                      <div className="swiper-zoom-container relative">
+                        <img 
+                          src={mockups && mockups.length > 0 
+                            ? `https://rlldapmwdyeeoloivwfi.supabase.co/storage/v1/object/public/designs/${mockups[0]?.mockup_path}`
+                            : "/placeholder.png"} 
+                          alt={design.name} 
+                          className="w-full h-[500px] object-contain cursor-zoom-in transition-opacity duration-300 opacity-100" 
+                        />
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-center py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        1 of {mockups ? mockups.length : 1}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="swiper-button-prev swiper-button-disabled swiper-button-lock"></div>
+                  <div className="swiper-button-next swiper-button-disabled swiper-button-lock"></div>
+                  <div className="swiper-pagination swiper-pagination-clickable swiper-pagination-bullets swiper-pagination-horizontal swiper-pagination-bullets-dynamic swiper-pagination-lock" style={{ width: '40px' }}>
+                    <span className="swiper-pagination-bullet swiper-pagination-bullet-active swiper-pagination-bullet-active-main" style={{ left: '0px' }}></span>
+                  </div>
+                </div>
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded-full">
+                  1 / {mockups ? mockups.length : 1}
+                </div>
+              </div>
+            </div>
+            
+            {/* Design info section */}
+            <h1 className="text-3xl font-bold mb-2">{design.name}</h1>
+            <div className="flex items-center space-x-4 text-gray-700">
+              <div className="flex items-center">
+                <Eye className="w-5 h-5 mr-1" aria-hidden="true" />
+                <span>{design.views || 0} views</span>
+              </div>
+              <div className="flex items-center">
+                <Heart className="w-5 h-5 mr-1" aria-hidden="true" />
+                <span>{design.favorites || 0} favorites</span>
+              </div>
+              <div className="flex items-center">
+                <Download className="w-5 h-5 mr-1" aria-hidden="true" />
+                <span>{design.downloads || 0} downloads</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
+              {mockups && mockups.length > 1 ? (
+                <div className="mb-6">
+                  {/* ImageCarousel component would go here */}
+                </div>
+              ) : null}
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                {store && (
+                  <Link 
+                    to={`/store/${store.id}`} 
+                    className="flex items-center text-blue-600 hover:underline"
+                  >
+                    <StoreIcon className="w-5 h-5 mr-2" />
+                    <span>{store.name || 'View Store'}</span>
+                  </Link>
+                )}
+                
+                <div className="flex space-x-2">
+                  {/* Download button - only shown for free designs or if purchased */}
+                  {(design.price === 0 || hasPurchased) && (
+                    <button
+                      onClick={handleDownload}
+                      className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                    >
+                      <Download className="w-5 h-5" />
+                      <span>Download</span>
+                    </button>
+                  )}
+                  
+                  {/* Add to Cart button - shown for paid designs that haven't been purchased */}
+                  {design.price && design.price > 0 && !hasPurchased && (
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={isAddingToCart || isInCart(design.id)}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-md text-white ${
+                        isInCart(design.id) 
+                          ? 'bg-green-600 cursor-default' 
+                          : 'bg-indigo-600 hover:bg-indigo-700'
+                      }`}
+                    >
+                      <ShoppingCart className="w-5 h-5" />
+                      <span>
+                        {isAddingToCart 
+                          ? 'Adding...' 
+                          : isInCart(design.id) 
+                            ? 'In Cart' 
+                            : `Add to Cart - $${design.price.toFixed(2)}`
+                        }
+                      </span>
+                    </button>
+                  )}
+                  
+                  {/* Show add to cart button for free designs */}
+                  {design.price === 0 && !isInCart(design.id) && (
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={isAddingToCart}
+                      className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+                    >
+                      <ShoppingCart className="w-5 h-5" />
+                      <span>{isAddingToCart ? 'Adding...' : 'Add to Cart'}</span>
+                    </button>
+                  )}
+                </div>
+                
+                {/* Share button */}
+                <button
+                  onClick={() => {
+                    navigator.share({
+                      title: design.name,
+                      text: design.description,
+                      url: window.location.href
+                    }).catch(() => {
+                      // Fallback for browsers that don't support Web Share API
+                      navigator.clipboard.writeText(window.location.href);
+                      alert('Link copied to clipboard!');
+                    });
+                  }}
+                  className="flex items-center space-x-2 bg-gray-100 text-gray-600 px-4 py-2 rounded-md hover:bg-gray-200"
+                >
+                  <Share2 className="w-5 h-5" />
+                  <span>Share</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {relatedDesigns && relatedDesigns.length > 0 && (
+            <div className="mt-4 mb-6">
+              <h3 className="text-lg font-semibold mb-3">More from this seller</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {relatedDesigns.map((related) => (
+                  <Link
+                    key={related.id}
+                    to={`/design/${related.id}`}
+                    className="block hover:opacity-90 transition-opacity"
+                  >
+                    <img
+                      src={related.mockup_path || '/placeholder.png'}
+                      alt={related.name}
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <p className="mt-2 text-sm font-medium truncate">
+                      {related.name}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Reviews section */}
+          <div className="border-t pt-8">
+            <h2 className="text-xl font-semibold mb-6">Reviews</h2>
+            <div className="space-y-8">
+              {/* Review form would go here */}
+              {reviews && reviews.length > 0 ? (
+                <div>{/* Reviews list would go here */}</div>
+              ) : (
+                <p className="text-gray-600 text-center py-4">
+                  No reviews yet. Be the first to review this design!
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Related Products section - designs with similar tags */}
+          <div className="border-t pt-8 mt-8">
+            <h2 className="text-xl font-semibold mb-6">Related Products</h2>
+            {tagRelatedDesigns && tagRelatedDesigns.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {tagRelatedDesigns.map((related) => (
+                  <Link
+                    key={related.id}
+                    to={`/design/${related.id}`}
+                    className="group">
+                    <div className="overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+                      <div className="aspect-w-16 aspect-h-9 bg-gray-100">
+                        <img
+                          src={tagRelatedMockups[related.id] || '/placeholder.png'}
+                          alt={related.name}
+                          className="object-cover w-full h-48 transform group-hover:scale-105 transition-transform duration-200"
+                          onError={(e) => {
+                            // Fallback if image fails to load
+                            (e.target as HTMLImageElement).src = '/placeholder.png';
+                          }}
+                        />
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-medium text-gray-900 mb-1 truncate">{related.name}</h3>
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-gray-500">
+                            {related.category}
+                          </p>
+                          <p className="font-medium text-blue-600">
+                            {related.price ? `$${related.price}` : 'Free'}
+                          </p>
+                        </div>
+                        {related.tags && related.tags.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {related.tags.slice(0, 2).map((tag, index) => (
+                              <span key={index} className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+                                {tag}
+                              </span>
+                            ))}
+                            {related.tags.length > 2 && (
+                              <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+                                +{related.tags.length - 2} more
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600 text-center py-8 bg-gray-50 rounded-lg">
+                No related products available yet. Products with similar tags will appear here.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

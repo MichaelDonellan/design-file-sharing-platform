@@ -7,6 +7,7 @@ type DbDesign = Database['public']['Tables']['designs']['Row'];
 export interface Design extends DbDesign {
   views: number;
   favorites: number;
+  free_download: boolean;
   tags?: string[];
   thumbnail_url?: string;
   price: number | null;

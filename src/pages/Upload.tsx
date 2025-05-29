@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Upload as UploadIcon, X, AlertCircle, Info } from 'lucide-react';
-import type { Store } from '../types';
-import { CATEGORIES } from '../types';
+
 import { toast } from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
+import { Info } from 'lucide-react';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_DESIGN_TYPES: Record<string, { extensions: string[], mimeTypes: string[] }> = {
@@ -53,50 +52,7 @@ const ALLOWED_DESIGN_TYPES: Record<string, { extensions: string[], mimeTypes: st
   }
 };
 
-interface ValidationError {
-  field: string;
-  message: string;
-}
 
-interface ValidationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  errors: ValidationError[];
-}
-
-function ValidationModal({ isOpen, onClose, errors }: ValidationModalProps) {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center text-red-600">
-            <AlertCircle className="w-6 h-6 mr-2" />
-            <h3 className="text-lg font-semibold">Validation Errors</h3>
-          </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="space-y-2">
-          {errors.map((error, index) => (
-            <div key={index} className="flex items-start text-red-600">
-              <Info className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
-              <p>{error.message}</p>
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={onClose}
-          className="mt-6 w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors"
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  );
-}
 
 export default function Upload() {
   const { user } = useAuth();
@@ -110,9 +66,8 @@ export default function Upload() {
   const [tagInput, setTagInput] = useState('');
   const [designFiles, setDesignFiles] = useState<File[]>([]);
   const [mockupFiles, setMockupFiles] = useState<File[]>([]);
+  const [freeDownload, setFreeDownload] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
-  const [showValidationModal, setShowValidationModal] = useState(false);
 
   useEffect(() => {
     async function checkStore() {
@@ -132,29 +87,22 @@ export default function Upload() {
     }
 
     checkStore();
-  }, [user, navigate]);
+  }, [user]);
 
   // Category change handler
   // Subcategory functionality removed
 
-  const validateFiles = (files: File[], type: 'design' | 'mockup'): ValidationError[] => {
-    const errors: ValidationError[] = [];
+  const validateFiles = (files: File[], type: 'design' | 'mockup'): string[] => {
+    const errors: string[] = [];
 
     if (files.length === 0) {
-      errors.push({
-        field: type,
-        message: `Please upload at least one ${type} file`
-      });
-      return errors;
+      errors.push(`Please upload at least one ${type} file`);
     }
 
     files.forEach((file) => {
       // Check file size
       if (file.size > MAX_FILE_SIZE) {
-        errors.push({
-          field: type,
-          message: `File "${file.name}" exceeds the 50MB size limit`
-        });
+        errors.push(`File "${file.name}" exceeds the 50MB size limit`);
       }
 
       // Check file types for design files
@@ -163,31 +111,25 @@ export default function Upload() {
         const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
         
         if (!allowedExtensions.includes(fileExtension)) {
-          errors.push({
-            field: type,
-            message: `File "${file.name}" is not a valid ${category.toLowerCase()} file type. Allowed types: ${allowedExtensions.join(', ')}`
-          });
+          errors.push(`File "${file.name}" is not a valid ${category.toLowerCase()} file type. Allowed types: ${allowedExtensions.join(', ')}`);
         }
       }
 
       // Check mockup file types
       if (type === 'mockup' && !file.type.startsWith('image/')) {
-        errors.push({
-          field: type,
-          message: `File "${file.name}" is not a valid image file`
-        });
+        errors.push(`File "${file.name}" is not a valid image file`);
       }
     });
 
     return errors;
   };
 
-  const validateForm = (): ValidationError[] => {
-    const errors: ValidationError[] = [];
+  const validateForm = (): string[] => {
+    const errors: string[] = [];
 
     // Required fields
     if (!name.trim()) {
-      errors.push({ field: 'name', message: 'Design name is required' });
+      errors.push('Design name is required');
     }
 
     if (!description.trim()) {
@@ -208,15 +150,7 @@ export default function Upload() {
   };
 
   const { getRootProps: getDesignRootProps, getInputProps: getDesignInputProps } = useDropzone({
-    onDrop: (acceptedFiles) => {
-      const errors = validateFiles(acceptedFiles, 'design');
-      if (errors.length > 0) {
-        setValidationErrors(errors);
-        setShowValidationModal(true);
-        return;
-      }
-      setDesignFiles((prev) => [...prev, ...acceptedFiles]);
-    },
+    onDrop: () => {},
     accept: Object.fromEntries(
       ALLOWED_DESIGN_TYPES[category].mimeTypes.map(mimeType => [mimeType, []])
     ),
@@ -224,28 +158,12 @@ export default function Upload() {
   });
 
   const { getRootProps: getMockupRootProps, getInputProps: getMockupInputProps } = useDropzone({
-    onDrop: (acceptedFiles) => {
-      const errors = validateFiles(acceptedFiles, 'mockup');
-      if (errors.length > 0) {
-        setValidationErrors(errors);
-        setShowValidationModal(true);
-        return;
-      }
-      setMockupFiles((prev) => [...prev, ...acceptedFiles]);
-    },
+    onDrop: () => {},
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp']
     },
     maxSize: MAX_FILE_SIZE,
   });
-
-  const removeDesignFile = (index: number) => {
-    setDesignFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const removeMockupFile = (index: number) => {
-    setMockupFiles((prev) => prev.filter((_, i) => i !== index));
-  };
 
   const getFileType = (category: string): 'image' | 'font' | 'template' => {
     switch (category) {
@@ -322,8 +240,7 @@ export default function Upload() {
     
     const errors = validateForm();
     if (errors.length > 0) {
-      setValidationErrors(errors);
-      setShowValidationModal(true);
+      toast.error(errors.join('\n'));
       return;
     }
 
@@ -333,7 +250,6 @@ export default function Upload() {
     }
 
     setLoading(true);
-
     try {
       // Pre-generate the design ID so we can use it in file paths
       const designId = uuidv4();
@@ -342,9 +258,7 @@ export default function Upload() {
       // Upload all design files first
       const designFileUploads = await Promise.all(
         designFiles.map(async (file, index) => {
-          // Upload using our standardized naming convention
           const { filePath } = await uploadDesignFile(file, 'design', designId);
-          
           return {
             file_path: filePath,
             file_type: getFileType(category),
@@ -356,9 +270,7 @@ export default function Upload() {
       // Upload all mockup files
       const mockupFileUploads = await Promise.all(
         mockupFiles.map(async (file, index) => {
-          // Upload mockup files with mockup prefix
           const { filePath } = await uploadDesignFile(file, 'mockup', designId);
-          
           return {
             mockup_path: filePath,
             display_order: index
@@ -366,7 +278,6 @@ export default function Upload() {
         })
       );
 
-      // Insert design record with our pre-generated ID
       const { data: design, error: designError } = await supabase
         .from('designs')
         .insert({
@@ -374,14 +285,13 @@ export default function Upload() {
           name,
           description,
           category,
-          // subcategory field removed
           user_id: user.id,
           store_id: store.id,
           file_type: getFileType(category),
-          price: price || 0,
+          price: freeDownload ? 0 : price,
           currency: store.currency || 'USD',
           tags: tags.length > 0 ? tags : null,
-          is_free_download: !price || price === 0,
+          free_download: freeDownload,
         })
         .select()
         .single();
@@ -436,8 +346,6 @@ export default function Upload() {
     }
   };
 
-  if (!store) return null;
-
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">Upload Design</h1>
@@ -460,194 +368,6 @@ export default function Upload() {
           </ul>
         </div>
       </div>
-      
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">
-            Design Name *
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter a descriptive name for your design"
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">
-            Description *
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
-            rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Describe your design and its features"
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">
-            Tags
-          </label>
-          <div className="space-y-2">
-            <input
-              type="text"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={handleAddTag}
-              placeholder="Add tags (press Enter to add)"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center px-2 py-1 rounded-md bg-blue-100 text-blue-800 text-sm"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => removeTag(tag)}
-                    className="ml-1 text-blue-600 hover:text-blue-800"
-                  >
-                    <X size={14} />
-                  </button>
-                </span>
-              ))}
-            </div>
-            <p className="text-sm text-gray-500">Add relevant tags to help users find your design</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">
-              Category *
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as typeof category)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {Object.entries(CATEGORIES).map(([key, value]) => (
-                <option key={key} value={key}>{value}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">
-              Price ({store.currency || 'USD'})
-            </label>
-            <input
-              type="number"
-              value={price || ''}
-              onChange={(e) => setPrice(e.target.value ? Number(e.target.value) : null)}
-              min="0"
-              step="0.01"
-              placeholder="0.00 (Free)"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="mt-1 text-sm text-gray-500">Leave empty or set to 0 for free download</p>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">
-            Design Files *
-          </label>
-          <div
-            {...getDesignRootProps()}
-            className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center hover:border-blue-500 transition-colors"
-          >
-            <input {...getDesignInputProps()} />
-            <p className="text-gray-600">
-              Drag and drop design files here, or click to select files
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Allowed file types: {ALLOWED_DESIGN_TYPES[category].extensions.join(', ')}<br />
-              <span className="text-xs">Max file size: 50MB per file</span>
-            </p>
-          </div>
-          {designFiles.length > 0 && (
-            <ul className="mt-4 space-y-2">
-              {designFiles.map((file, index) => (
-                <li
-                  key={index}
-                  className="flex items-center justify-between bg-gray-50 p-2 rounded"
-                >
-                  <span className="text-sm text-gray-600">{file.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeDesignFile(index)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <X size={16} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="mb-6">
-          <label className="block text-gray-700 font-medium mb-2">
-            Mockup Images *
-          </label>
-          <div
-            {...getMockupRootProps()}
-            className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center hover:border-blue-500 transition-colors"
-          >
-            <input {...getMockupInputProps()} />
-            <p className="text-gray-600">
-              Drag and drop mockup images here, or click to select files
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Allowed file types: PNG, JPG, JPEG, GIF<br />
-              <span className="text-xs">Max file size: 50MB per file</span>
-            </p>
-          </div>
-          {mockupFiles.length > 0 && (
-            <ul className="mt-4 space-y-2">
-              {mockupFiles.map((file, index) => (
-                <li
-                  key={index}
-                  className="flex items-center justify-between bg-gray-50 p-2 rounded"
-                >
-                  <span className="text-sm text-gray-600">{file.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeMockupFile(index)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <X size={16} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-500 text-white px-6 py-3 rounded-md hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
-        >
-          <UploadIcon size={20} />
-          <span>{loading ? 'Uploading...' : 'Upload Design'}</span>
-        </button>
-      </form>
-
-      <ValidationModal
-        isOpen={showValidationModal}
-        onClose={() => setShowValidationModal(false)}
-        errors={validationErrors}
-      />
     </div>
   );
 }

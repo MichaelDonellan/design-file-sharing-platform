@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Design } from '../types';
@@ -14,6 +15,10 @@ interface SearchSuggestion {
 }
 
 export default function Categories() {
+  const location = useLocation();
+  // Parse ?main=Category from the query string
+  const queryParams = new URLSearchParams(location.search);
+  const mainCategory = queryParams.get('main');
   const [designs, setDesigns] = useState<Record<string, Design[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +54,7 @@ export default function Categories() {
 
         if (designsData) {
           const designsByCategory = designsData.reduce((acc, design) => {
-            const category = design.is_free_download ? 'Free Downloads' : design.category;
+            const category = design.free_download ? 'Free Downloads' : design.category;
             if (!acc[category]) {
               acc[category] = [];
             }
@@ -259,65 +264,24 @@ const mockupMap = mockupsData.reduce((acc, mockup) => {
     );
   }
 
+  // Determine which categories to show
+  let categoriesToShow: [string, Design[]][];
+  if (mainCategory) {
+    categoriesToShow = Object.entries(designs).filter(
+      ([category]) => category.toLowerCase() === mainCategory.toLowerCase()
+    );
+  } else {
+    categoriesToShow = Object.entries(designs);
+  }
+  const hasResults = categoriesToShow.some(([, categoryDesigns]) => filterDesigns(categoryDesigns).length > 0);
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">Browse Categories</h1>
-        <div ref={searchRef} className="relative">
-          <div className="flex">
-            <input
-              ref={inputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onInput={handleInput}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setShowSuggestions(true)}
-              placeholder="Search designs or categories..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoCapitalize="off"
-              autoCorrect="off"
-              autoComplete="off"
-              spellCheck="false"
-              enterKeyHint="search"
-            />
-            <button
-              type="button"
-              onClick={handleSearch}
-              className="bg-blue-500 text-white px-4 py-2 rounded-r-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center"
-            >
-              <Search size={20} />
-            </button>
-          </div>
-
-          {/* Suggestions dropdown */}
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
-              {suggestions.map((suggestion) => (
-                <button
-                  key={`${suggestion.type}-${suggestion.id}`}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 flex items-center justify-between"
-                >
-                  <div className="flex items-center">
-                    <Tag size={16} className="mr-2 text-gray-500" />
-                    <span className="font-medium">{suggestion.name}</span>
-                  </div>
-                  <span className="text-sm text-gray-500">
-                    {suggestion.type === 'category' ? 'Category' : suggestion.category}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-12">
-        {Object.entries(designs).map(([category, categoryDesigns]) => {
+    <>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {hasResults ? (
+        categoriesToShow.map(([category, categoryDesigns]) => {
           const filteredDesigns = filterDesigns(categoryDesigns);
           if (filteredDesigns.length === 0) return null;
-
           return (
             <div key={category} className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between mb-6">
@@ -325,14 +289,15 @@ const mockupMap = mockupsData.reduce((acc, mockup) => {
                   <Tag className="mr-2" size={24} />
                   {category}
                 </h2>
-                <Link
-                  to={`/category/${category.toLowerCase()}`}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                >
-                  View all
-                </Link>
+                {!mainCategory && (
+                  <Link
+                    to={`/category/${category.toLowerCase()}`}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    View all
+                  </Link>
+                )}
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredDesigns.slice(0, 8).map((design) => (
                   <Link
@@ -378,8 +343,10 @@ const mockupMap = mockupsData.reduce((acc, mockup) => {
               </div>
             </div>
           );
-        })}
-      </div>
+        })
+      ) : (
+        <div className="text-center text-gray-500 py-12 text-lg">No results</div>
+      )}
     </div>
-  );
-} 
+  </>);
+}

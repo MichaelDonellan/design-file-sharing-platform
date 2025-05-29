@@ -5,7 +5,7 @@ export interface Design {
   user_id: string;
   price: number;
   category: string;
-  is_free_download: boolean;
+  free_download: boolean;
   created_at: string;
   updated_at: string;
   downloads: number;

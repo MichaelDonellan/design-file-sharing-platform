@@ -6,6 +6,7 @@ import { Download, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import CategorySidebar from '../components/CategorySidebar';
 import SearchBar from '../components/SearchBar';
+import HeroBanner from '../components/HeroBanner';
 
 const SUPPORTED_CURRENCIES = [
   { code: 'USD', symbol: '$', name: 'US Dollar' },
@@ -79,7 +80,7 @@ export default function Home() {
 
         let query = supabase
           .from('designs')
-          .select('*')
+          .select('*, stores(name)')
           .order('created_at', { ascending: false });
 
         if (selectedCategory.main !== 'all') {
@@ -180,43 +181,32 @@ const mockupMap = mockupsData.reduce((acc, mockup) => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Currency Selector */}
-      <div className="mb-6 flex justify-end">
-        <select
-          value={currency}
-          onChange={e => {
-            setCurrency(e.target.value);
-            localStorage.setItem('preferredCurrency', e.target.value);
-          }}
-          className="border border-gray-300 rounded px-3 py-1 text-sm"
-        >
-          {SUPPORTED_CURRENCIES.map(c => (
-            <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
-          ))}
-        </select>
-      </div>
-    <div className="flex gap-8">
-        {/* Category sidebar - desktop only */}
-        <div className="hidden lg:block">
-      <CategorySidebar
-        selectedCategory={selectedCategory.main}
-        selectedSubcategory={selectedCategory.sub}
-        onCategorySelect={(category, subcategory) => {
-          setSelectedCategory({ main: category, sub: subcategory });
-        }}
-      />
+    <>
+      <HeroBanner />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Currency Selector */}
+        <div className="mb-6 flex justify-end">
+          <select
+            className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            value={currency}
+            onChange={e => {
+              setCurrency(e.target.value);
+              localStorage.setItem('preferredCurrency', e.target.value);
+            }}
+          >
+            {SUPPORTED_CURRENCIES.map(c => (
+              <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
+            ))}
+          </select>
         </div>
 
-      <div className="flex-1">
-        <div className="mb-8 space-y-4">
-          <h1 className="text-3xl font-bold">New Arrivals</h1>
-          <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-          />
-        </div>
-
+        <div className="flex-1">
+          <div className="mb-8 space-y-4">
+            <h1 className="text-3xl font-bold">New Arrivals</h1>
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+            />
         {designs.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <p className="text-gray-600 mb-4">No designs found</p>
@@ -230,63 +220,64 @@ const mockupMap = mockupsData.reduce((acc, mockup) => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {designs.map((design) => (
-              <Link
+              <div
                 key={design.id}
-                to={`/design/${design.id}`}
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
-                <div className="aspect-w-16 aspect-h-16">
-                  <img
-                    src={designMockups[design.id] || '/placeholder.png'}
-                    alt={design.name}
-                    className="w-full h-64 object-cover object-center"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/placeholder.png';
-                    }}
-                  />
-                </div>
-                <div className="p-4">
+                <Link to={`/design/${design.id}`}>  
+                  <div className="aspect-w-16 aspect-h-16">
+                    <img
+                      src={designMockups[design.id] || '/placeholder.png'}
+                      alt={design.name}
+                      className="w-full h-64 object-cover object-center"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/placeholder.png';
+                      }}
+                    />
+                  </div>
+                  <div className="p-4">
                     <h3 className="font-semibold text-gray-900 truncate max-w-full">{design.name}</h3>
-                    {/* Price badge */}
-                    <div className="mt-2">
-                      {design.price && design.price > 0 ? (
-                        <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
-                          {getCurrencySymbol(currency)}{convertPrice(design.price, currency).toFixed(2)}
-                    </span>
-                      ) : (
-                        <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
-                      )}
-                    </div>
-                    {/* Tags below main info */}
-                    {design.tags && design.tags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {design.tags.map((tag) => (
-                          <span key={tag} className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">{tag}</span>
-                        ))}
-                      </div>
+                  </div>
+                </Link>
+                <div className="px-4 pb-4">
+                  {/* Price badge */}
+                  <div className="mt-2">
+                    {design.price && design.price > 0 ? (
+                      <span className="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
+                        {getCurrencySymbol(currency)}{convertPrice(design.price, currency).toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">Free</span>
                     )}
-                    <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <Calendar size={16} className="mr-1" />
-                        {format(new Date(design.created_at), 'MMM d, yyyy')}
-                      </div>
-                      <div className="flex items-center">
-                        <Download size={16} className="mr-1" />
-                        {design.downloads}
-                      </div>
+                  </div>
+                  {/* Tags below main info */}
+                  {design.tags && design.tags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {design.tags.map((tag) => (
+                        <span key={tag} className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">{tag}</span>
+                      ))}
                     </div>
-                    {/* Buy/Download button - require login (pseudo, actual logic may be in DesignDetail) */}
-                    {/* <button className="mt-3 w-full bg-blue-600 text-white py-2 rounded-md font-semibold hover:bg-blue-700 transition-colors">
-                      {design.price && design.price > 0 ? 'Buy Now' : 'Download'}
-                    </button> */}
+                  )}
+                  <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex items-center">
+                      <Link to={`/store/${design.store_id}`} className="text-blue-600 font-semibold hover:underline">
+                        {design.stores?.name || 'Store'}
+                      </Link>
+                    </div>
+                    <div className="flex items-center">
+                      <Download size={16} className="mr-1" />
+                      {design.downloads}
+                    </div>
+                  </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
         </div>
       </div>
     </div>
-  );
+  </>
+);
 }

@@ -4,6 +4,20 @@ import { toast } from 'react-toastify';
 import { Design } from '../../types';
 import { supabase } from '../../lib/supabase';
 
+// Category options constant
+export const CATEGORIES = [
+  'SVGs',
+  'Images',
+  'Fonts',
+  'Bundles',
+  'Templates',
+  'Laser Cutting',
+  'Sublimation',
+  'POD',
+] as const;
+
+type CategoryType = typeof CATEGORIES[number];
+
 export default function EditListing() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -172,9 +186,10 @@ export default function EditListing() {
           name: listing.name,
           description: listing.description,
           price: listing.price,
+          free_download: listing.free_download,
           category: listing.category,
           tags: listing.tags,
-          is_free_download: listing.is_free_download,
+
           file_type: listing.file_type
         })
         .eq('id', listing.id);
@@ -345,20 +360,6 @@ export default function EditListing() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700">File Type</label>
-          <select
-            value={listing.file_type}
-            onChange={(e) => setListing({ ...listing, file_type: e.target.value as 'image' | 'font' | 'template' })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            required
-          >
-            <option value="">Select file type</option>
-            <option value="image">Image</option>
-            <option value="font">Font</option>
-            <option value="template">Template</option>
-          </select>
-        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700">Free Download</label>
@@ -366,8 +367,8 @@ export default function EditListing() {
             <label className="inline-flex items-center">
               <input
                 type="checkbox"
-                checked={listing.is_free_download}
-                onChange={(e) => setListing({ ...listing, is_free_download: e.target.checked })}
+                checked={!!listing.free_download}
+                onChange={e => setListing({ ...listing, free_download: e.target.checked })}
                 className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <span className="ml-2 text-sm">Is this a free download?</span>
@@ -397,28 +398,29 @@ export default function EditListing() {
               step="0.01"
               value={listing.price || ''}
               onChange={(e) => setListing({ ...listing, price: e.target.value ? parseFloat(e.target.value) : 0 })}
-              className={`flex-1 block w-full rounded-none rounded-r-md min-w-0 border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${listing.is_free_download ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-              required={!listing.is_free_download}
-              disabled={listing.is_free_download}
+              className={`flex-1 block w-full rounded-none rounded-r-md min-w-0 border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${listing.free_download ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              required={!listing.free_download}
+              disabled={listing.free_download}
             />
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Category</label>
+        <div className="mb-4">
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+            Category
+          </label>
           <select
-            value={listing.category}
-            onChange={(e) => setListing({ ...listing, category: e.target.value as 'Fonts' | 'Logos' | 'Templates' | 'Icons' | 'UI Kits' | 'Free Downloads' })}
+            id="category"
+            name="category"
+            value={listing?.category || ''}
+            onChange={e => setListing(listing ? { ...listing, category: e.target.value as typeof CATEGORIES[number] } : null)}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             required
           >
-            <option value="">Select category</option>
-            <option value="Fonts">Fonts</option>
-            <option value="Logos">Logos</option>
-            <option value="Templates">Templates</option>
-            <option value="Icons">Icons</option>
-            <option value="UI Kits">UI Kits</option>
-            <option value="Free Downloads">Free Downloads</option>
+            <option value="" disabled>Select a category</option>
+            {CATEGORIES.map((cat: CategoryType) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
           </select>
         </div>
 
@@ -471,6 +473,34 @@ export default function EditListing() {
                 <p className="pl-1">or drag and drop</p>
               </div>
               <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+              {/* Preview for selected image */}
+              {previewImage && (
+                <div className="mt-4 flex flex-col items-center">
+                  <img
+                    src={URL.createObjectURL(previewImage)}
+                    alt="Preview"
+                    className="w-32 h-32 object-cover rounded shadow border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPreviewImage(null)}
+                    className="mt-2 text-red-500 hover:text-red-700 text-xs"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+              {/* Show existing preview image if available and no new image selected */}
+              {!previewImage && listing?.thumbnail_url && (
+                <div className="mt-4 flex flex-col items-center">
+                  <img
+                    src={listing.thumbnail_url}
+                    alt="Current Preview"
+                    className="w-32 h-32 object-cover rounded shadow border"
+                  />
+                  <span className="mt-2 text-gray-400 text-xs">Current Preview</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -542,13 +572,33 @@ export default function EditListing() {
                     name="files"
                     type="file"
                     multiple
-                    onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                    onChange={(e) => {
+                      const selectedFiles = Array.from(e.target.files || []);
+                      setFiles(selectedFiles);
+                    }}
                     className="sr-only"
                   />
                 </label>
                 <p className="pl-1">or drag and drop</p>
               </div>
               <p className="text-xs text-gray-500">ZIP, PSD, AI, PDF up to 100MB</p>
+              {/* Preview for selected design files */}
+              {files.length > 0 && (
+                <div className="mt-4 flex flex-col items-center space-y-2">
+                  {files.map((file, idx) => (
+                    <div key={idx} className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-700">{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setFiles(files.filter((_, i) => i !== idx))}
+                        className="text-red-500 hover:text-red-700 text-xs"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

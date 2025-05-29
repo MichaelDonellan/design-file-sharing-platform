@@ -26,7 +26,7 @@ export default function DownloadButton({
   filePath,
   fileName = 'design-file.zip',
   price,
-  isFreeDownload,
+  free_download,
   className = '',
   onDownloadStarted,
   onDownloadComplete,
@@ -157,7 +157,7 @@ export default function DownloadButton({
   // Don't render button if user doesn't have permission
   if (!canDownload) {
     // For paid designs that haven't been purchased, don't show download button
-    if (price > 0 && !isFreeDownload) {
+    if (canDownload || free_download) {
       return null;
     }
     
