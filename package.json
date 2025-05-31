@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@headlessui/react": "1.7.18",
-    "@supabase/supabase-js": "2.39.3",
+    "@supabase/supabase-js": "^2.39.3",
     "axios": "^1.9.0",
     "date-fns": "3.3.1",
     "fs-extra": "^11.3.0",

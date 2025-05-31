@@ -66,7 +66,8 @@ export interface DesignFile {
   file_path: string;
   file_type: 'image' | 'font' | 'template';
   display_order: number;
-}
+  url?: string; // Optional property for frontend use
+};
 
 export interface DesignMockup {
   id: string;

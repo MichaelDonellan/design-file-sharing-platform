@@ -203,12 +203,16 @@ function DesignDetail() {
           .order('display_order', { ascending: true });
 
         if (fileData) {
-          // Add url property for frontend display
-          const processedFiles = fileData.map((file: DesignFile) => ({
+          // Generate signed URLs for each file
+          // For public buckets, generate the public URL directly
+          const projectRef = 'rlldapmwdyeeoloivwfi'; // Use your Supabase project ref
+          const publicFiles = fileData.map((file: DesignFile) => ({
             ...file,
-            url: file.file_path // Add url property based on file_path
+            url: file.file_path
+              ? `https://${projectRef}.supabase.co/storage/v1/object/public/${file.file_path}`
+              : '',
           }));
-          setFiles(processedFiles);
+          setFiles(publicFiles);
         }
       }
     } catch (error) {
@@ -303,25 +307,52 @@ function DesignDetail() {
         {/* Left: Images & Share */}
         <div className="flex-1 min-w-[280px]">
           {/* Main Image */}
-          {files[0]?.url && (
-            <img src={files[0].url} alt={design?.name} className="w-full h-72 object-contain rounded-lg border mb-4 bg-gray-100" />
-          )}
+          {/* Debug: Log files array to help diagnose image selection issues */}
+          {console.log('DesignDetail files array:', files)}
+          {/* Main Mockup Image: Prefer a file with "mockup" in the name and an image extension, else first image file */}
+          {(() => {
+            // Acceptable image extensions
+            const imageExtensions = [
+              '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.avif', '.jfif', '.pjpeg', '.pjp', '.tiff', '.ico'
+            ];
+            // Helper to check for image extension
+            const isImage = (filename: string = '') => {
+              return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+            };
+            // Prefer a file with 'mockup' in the name and an image extension
+            const mockupImage = files.find(f => f.url && isImage(f.url) && f.url.toLowerCase().includes('mockup'));
+            // Else, fall back to first image file
+            const firstImage = files.find(f => f.url && isImage(f.url));
+            const imageFile = mockupImage || firstImage;
+            return imageFile?.url ? (
+              <img src={imageFile.url} alt={design?.name} className="w-full h-72 object-contain rounded-lg border mb-4 bg-gray-100" />
+            ) : (
+              <div className="w-full h-72 flex items-center justify-center bg-gray-200 rounded-lg border mb-4 text-gray-400">
+                No preview image available
+              </div>
+            );
+          })()}
+
+
+
           {/* Gallery Thumbnails */}
           <div className="flex gap-2 mb-4 overflow-x-auto">
-            {files.map((file, idx) => (
-              <img
-                key={file.id || idx}
-                src={file.url}
-                alt={`Preview ${idx + 1}`}
-                className="w-16 h-16 object-cover rounded border cursor-pointer hover:ring-2 hover:ring-blue-400 transition"
-                onClick={() => {
-                  // Swap main image with clicked thumbnail
-                  const reordered = [...files];
-                  const [clicked] = reordered.splice(idx, 1);
-                  setFiles([clicked, ...reordered]);
-                }}
-              />
-            ))}
+            {files
+              .filter(file => /\.(png|jpe?g|gif|webp|svg)$/i.test(file.url || ''))
+              .map((file, idx) => (
+                <img
+                  key={file.id || idx}
+                  src={file.url}
+                  alt={`Preview ${idx + 1}`}
+                  className="w-16 h-16 object-cover rounded border cursor-pointer hover:ring-2 hover:ring-blue-400 transition"
+                  onClick={() => {
+                    // Swap main image with clicked thumbnail
+                    const reordered = [...files];
+                    const [clicked] = reordered.splice(idx, 1);
+                    setFiles([clicked, ...reordered]);
+                  }}
+                />
+              ))}
           </div>
           {/* Social Share Buttons */}
           <div className="flex gap-2 mb-2">
@@ -337,7 +368,6 @@ function DesignDetail() {
           {/* Star Rating & Review */}
           <div className="flex items-center gap-2 mb-2">
             <span className="flex text-yellow-400 text-lg">
-              {/* 5 stars always for demo; replace with real rating if available */}
               {[...Array(5)].map((_, i) => (
                 <svg key={i} fill="currentColor" viewBox="0 0 20 20" className="w-5 h-5"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.97a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.97c.3.921-.755 1.688-1.54 1.118l-3.38-2.455a1 1 0 00-1.176 0l-3.38 2.455c-.784.57-1.838-.197-1.539-1.118l1.287-3.97a1 1 0 00-.364-1.118L2.05 9.397c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.97z" /></svg>
               ))}
