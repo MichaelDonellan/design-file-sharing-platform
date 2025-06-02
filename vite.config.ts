@@ -17,11 +17,7 @@ export default defineConfig(({ mode }) => {
         'swiper',
         '@headlessui/react',
         // Dynamic imports that need optimization
-        'jszip',
-        // Ensure sub-imports are also included
-        'react-router-dom/client',
-        'react-router-dom/server',
-        'react-router-dom/dist/index'
+        'jszip'
       ]
     },
     preview: {

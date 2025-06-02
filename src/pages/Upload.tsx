@@ -11,28 +11,32 @@ import { Info } from 'lucide-react';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_DESIGN_TYPES: Record<string, { extensions: string[], mimeTypes: string[] }> = {
   'SVGs': { 
-    extensions: ['.svg'],
-    mimeTypes: ['image/svg+xml']
+    extensions: ['.svg', '.zip'],
+    mimeTypes: ['image/svg+xml', 'application/zip']
+  },
+  'POD': {
+    extensions: ['.png', '.jpg', '.jpeg', '.svg', '.zip'],
+    mimeTypes: ['image/png', 'image/jpeg', 'image/svg+xml', 'application/zip']
   },
   'Images': { 
-    extensions: ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
-    mimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+    extensions: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.zip'],
+    mimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/zip']
   },
   'Fonts': { 
-    extensions: ['.ttf', '.otf', '.woff', '.woff2'],
-    mimeTypes: ['font/ttf', 'font/otf', 'font/woff', 'font/woff2']
+    extensions: ['.ttf', '.otf', '.woff', '.woff2', '.zip'],
+    mimeTypes: ['font/ttf', 'font/otf', 'font/woff', 'font/woff2', 'application/zip']
   },
   'Templates': { 
     extensions: ['.zip', '.psd', '.ai', '.pdf'],
     mimeTypes: ['application/zip', 'application/psd', 'application/illustrator', 'application/pdf']
   },
   'Logos': { 
-    extensions: ['.svg', '.png', '.ai', '.psd'],
-    mimeTypes: ['image/svg+xml', 'image/png', 'application/illustrator', 'application/psd']
+    extensions: ['.svg', '.png', '.ai', '.psd', '.zip'],
+    mimeTypes: ['image/svg+xml', 'image/png', 'application/illustrator', 'application/psd', 'application/zip']
   },
   'Icons': { 
-    extensions: ['.svg', '.png'],
-    mimeTypes: ['image/svg+xml', 'image/png']
+    extensions: ['.svg', '.png', '.zip'],
+    mimeTypes: ['image/svg+xml', 'image/png', 'application/zip']
   },
   'UI Kits': { 
     extensions: ['.zip', '.sketch', '.fig', '.xd'],
@@ -43,8 +47,8 @@ const ALLOWED_DESIGN_TYPES: Record<string, { extensions: string[], mimeTypes: st
     mimeTypes: ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed']
   },
   'Laser Cutting': { 
-    extensions: ['.svg', '.dxf', '.ai', '.eps', '.pdf'],
-    mimeTypes: ['image/svg+xml', 'application/dxf', 'application/illustrator', 'application/postscript', 'application/pdf']
+    extensions: ['.svg', '.dxf', '.ai', '.eps', '.pdf', '.zip'],
+    mimeTypes: ['image/svg+xml', 'application/dxf', 'application/illustrator', 'application/postscript', 'application/pdf', 'application/zip']
   },
   'Sublimation': { 
     extensions: ['.png', '.psd', '.tif', '.tiff'],
@@ -55,9 +59,10 @@ const ALLOWED_DESIGN_TYPES: Record<string, { extensions: string[], mimeTypes: st
 
 
 export default function Upload() {
+
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [store, setStore] = useState<Store | null>(null);
+  const [store, setStore] = useState<any>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<keyof typeof ALLOWED_DESIGN_TYPES>('SVGs');
@@ -66,8 +71,100 @@ export default function Upload() {
   const [tagInput, setTagInput] = useState('');
   const [designFiles, setDesignFiles] = useState<File[]>([]);
   const [mockupFiles, setMockupFiles] = useState<File[]>([]);
+  const [mockupPreviews, setMockupPreviews] = useState<string[]>([]);
   const [freeDownload, setFreeDownload] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<'active' | 'inactive' | 'draft'>('active');
+  const [formErrors, setFormErrors] = useState<string[]>([]);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    // TODO: Implement upload logic
+  };
+
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      setTags([...tags, tagInput.trim()]);
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tag: string) => {
+    setTags(tags.filter(t => t !== tag));
+  };
+
+  const onDropMockups = (acceptedFiles: File[]) => {
+    setMockupFiles([...mockupFiles, ...acceptedFiles]);
+  };
+
+  const {
+    getRootProps: getMockupRootProps,
+    getInputProps: getMockupInputProps,
+    isDragActive: isMockupDragActive
+  } = useDropzone({
+    onDrop: onDropMockups,
+    accept: {
+      'image/png': ['.png'],
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/gif': ['.gif'],
+      'image/webp': ['.webp']
+    },
+    multiple: true
+  });
+
+  const dropzone = (
+    <div>
+      <div
+        {...getMockupRootProps()}
+        className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-6 cursor-pointer transition bg-gray-50 hover:bg-blue-50 ${isMockupDragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-300'}`}
+      >
+        <input {...getMockupInputProps()} />
+        <svg width="36" height="36" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="text-blue-400 mb-2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5V19a2 2 0 002 2h14a2 2 0 002-2v-2.5M16 6l-4-4m0 0L8 6m4-4v14" />
+        </svg>
+        <p className="text-gray-700 text-sm font-medium">
+          {isMockupDragActive ? 'Drop the images here...' : 'Drag & drop mockup images here, or click to select'}
+        </p>
+        <p className="text-xs text-gray-400 mt-1">PNG, JPG, JPEG, GIF, WEBP • Multiple files supported</p>
+      </div>
+      {mockupFiles.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-4">
+          {mockupFiles.map((file, idx) => (
+            <div key={file.name} className="relative w-28 h-28 flex flex-col items-center justify-center group">
+              <img
+                src={mockupPreviews[idx]}
+                alt={file.name}
+                className="object-cover w-24 h-24 rounded-lg border border-gray-300 shadow-sm group-hover:opacity-80 transition"
+              />
+              <button
+                type="button"
+                className="absolute top-0 right-0 bg-white bg-opacity-90 text-red-600 rounded-full px-2 py-1 text-xs font-bold hover:bg-red-100 shadow"
+                onClick={() => {
+                  setMockupFiles(mockupFiles.filter((_, i) => i !== idx));
+                }}
+                title="Remove"
+              >
+                ×
+              </button>
+              <span className="text-xs mt-1 truncate w-full text-center">{file.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  useEffect(() => {
+    if (mockupFiles.length > 0) {
+      const urls = mockupFiles.map(file => URL.createObjectURL(file));
+      setMockupPreviews(urls);
+      return () => {
+        urls.forEach(url => URL.revokeObjectURL(url));
+      };
+    } else {
+      setMockupPreviews([]);
+    }
+  }, [mockupFiles]);
 
   useEffect(() => {
     async function checkStore() {
@@ -89,9 +186,6 @@ export default function Upload() {
     checkStore();
   }, [user]);
 
-  // Category change handler
-  // Subcategory functionality removed
-
   const validateFiles = (files: File[], type: 'design' | 'mockup'): string[] => {
     const errors: string[] = [];
 
@@ -109,15 +203,18 @@ export default function Upload() {
       if (type === 'design') {
         const { extensions: allowedExtensions } = ALLOWED_DESIGN_TYPES[category];
         const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
-        
-        if (!allowedExtensions.includes(fileExtension)) {
+        if (!allowedExtensions.map(ext => ext.toLowerCase()).includes(fileExtension)) {
           errors.push(`File "${file.name}" is not a valid ${category.toLowerCase()} file type. Allowed types: ${allowedExtensions.join(', ')}`);
         }
       }
 
-      // Check mockup file types
-      if (type === 'mockup' && !file.type.startsWith('image/')) {
-        errors.push(`File "${file.name}" is not a valid image file`);
+      // Check mockup file types (only allow images)
+      if (type === 'mockup') {
+        const allowedMockupExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
+        const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
+        if (!file.type.startsWith('image/') || !allowedMockupExtensions.includes(fileExtension)) {
+          errors.push(`File "${file.name}" is not a valid image file. Allowed types: .png, .jpg, .jpeg, .gif, .webp`);
+        }
       }
     });
 
@@ -133,17 +230,20 @@ export default function Upload() {
     }
 
     if (!description.trim()) {
-      errors.push({ field: 'description', message: 'Description is required' });
+      errors.push('Description is required');
     }
 
     // Validate files
+    if (designFiles.length === 0) {
+      errors.push('You must upload at least one design file.');
+    }
     const designErrors = validateFiles(designFiles, 'design');
     const mockupErrors = validateFiles(mockupFiles, 'mockup');
     errors.push(...designErrors, ...mockupErrors);
 
     // Validate price if set
     if (price !== null && price < 0) {
-      errors.push({ field: 'price', message: 'Price cannot be negative' });
+      errors.push('Price cannot be negative');
     }
 
     return errors;
@@ -154,14 +254,6 @@ export default function Upload() {
     accept: Object.fromEntries(
       ALLOWED_DESIGN_TYPES[category].mimeTypes.map(mimeType => [mimeType, []])
     ),
-    maxSize: MAX_FILE_SIZE,
-  });
-
-  const { getRootProps: getMockupRootProps, getInputProps: getMockupInputProps } = useDropzone({
-    onDrop: () => {},
-    accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp']
-    },
     maxSize: MAX_FILE_SIZE,
   });
 
@@ -185,189 +277,154 @@ export default function Upload() {
         throw new Error('User must be authenticated to upload files');
       }
 
-      // Create a standardized path for the file
       const fileExt = file.name.split('.').pop() || '';
       const baseName = file.name.includes('.') ? file.name.substring(0, file.name.lastIndexOf('.')) : file.name;
       const safeFileName = baseName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       const filePath = `designs/${designId}/${prefix}_${safeFileName}.${fileExt}`;
       
-      console.log(`Uploading file to standardized path: ${filePath}`);
-
       const { error: uploadError } = await supabase.storage
         .from('designs')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true // Allow overwriting if file exists
+          upsert: true
         });
 
       if (uploadError) {
-        console.error('Supabase storage upload error:', uploadError);
         throw new Error(`Failed to upload ${prefix} file: ${uploadError.message}`);
       }
 
-      console.log('File uploaded successfully:', filePath);
-
-      // Get the public URL if needed
       const { data: { publicUrl } } = supabase.storage
         .from('designs')
         .getPublicUrl(filePath);
 
-      console.log('Generated public URL:', publicUrl);
       return { filePath };
     } catch (error) {
-      console.error(`Error in uploadFile (${prefix}):`, error);
+      console.error('Error uploading design file:', error);
       throw error;
     }
   };
 
-  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
-      e.preventDefault();
-      const newTag = tagInput.trim().toLowerCase();
-      if (!tags.includes(newTag)) {
-        setTags([...tags, newTag]);
-      }
-      setTagInput('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const errors = validateForm();
-    if (errors.length > 0) {
-      toast.error(errors.join('\n'));
-      return;
-    }
-
-    if (!user || !store) {
-      toast.error('Please sign in and create a store first');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Pre-generate the design ID so we can use it in file paths
-      const designId = uuidv4();
-      console.log('Created new design ID for uploads:', designId);
-      
-      // Upload all design files first
-      const designFileUploads = await Promise.all(
-        designFiles.map(async (file, index) => {
-          const { filePath } = await uploadDesignFile(file, 'design', designId);
-          return {
-            file_path: filePath,
-            file_type: getFileType(category),
-            display_order: index
-          };
-        })
-      );
-
-      // Upload all mockup files
-      const mockupFileUploads = await Promise.all(
-        mockupFiles.map(async (file, index) => {
-          const { filePath } = await uploadDesignFile(file, 'mockup', designId);
-          return {
-            mockup_path: filePath,
-            display_order: index
-          };
-        })
-      );
-
-      const { data: design, error: designError } = await supabase
-        .from('designs')
-        .insert({
-          id: designId, // Use our pre-generated ID
-          name,
-          description,
-          category,
-          user_id: user.id,
-          store_id: store.id,
-          file_type: getFileType(category),
-          price: freeDownload ? 0 : price,
-          currency: store.currency || 'USD',
-          tags: tags.length > 0 ? tags : null,
-          free_download: freeDownload,
-        })
-        .select()
-        .single();
-
-      if (designError) throw designError;
-
-      // Insert design files
-      const { error: filesError } = await supabase
-        .from('design_files')
-        .insert(
-          designFileUploads.map(file => ({
-            design_id: design.id,
-            ...file
-          }))
-        );
-
-      if (filesError) throw filesError;
-
-      // Insert mockup files
-      const { error: mockupsError } = await supabase
-        .from('design_mockups')
-        .insert(
-          mockupFileUploads.map(file => ({
-            design_id: design.id,
-            ...file
-          }))
-        );
-
-      if (mockupsError) throw mockupsError;
-
-      // Notify admin about new pending listing
-      const { error: notifyError } = await supabase
-        .from('notifications')
-        .insert({
-          type: 'new_listing',
-          message: `New listing pending approval: ${name}`,
-          design_id: design.id,
-          created_at: new Date().toISOString()
-        });
-
-      if (notifyError) {
-        console.error('Failed to create notification:', notifyError);
-      }
-
-      toast.success('Design uploaded successfully! It will be reviewed by an admin.');
-      navigate(`/design/${design.id}`);
-    } catch (err) {
-      console.error('Error in handleSubmit:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to upload design');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">Upload Design</h1>
-      
-      {/* Info Alert for file types and size */}
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded flex items-start space-x-3">
-        <Info className="w-6 h-6 text-blue-500 mt-1" />
-        <div className="text-blue-800 text-sm">
-          <div className="mb-1 font-semibold">Upload Requirements:</div>
-          <ul className="list-disc ml-5">
-            <li>
-              <span className="font-medium">Design files</span>: {ALLOWED_DESIGN_TYPES[category].extensions.join(', ')}
-            </li>
-            <li>
-              <span className="font-medium">Mockup images</span>: .png, .jpg, .jpeg, .gif, .webp
-            </li>
-            <li>
-              <span className="font-medium">Max file size</span>: 50MB per file
-            </li>
-          </ul>
+    <div>
+      <form onSubmit={handleSubmit}>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="font-medium">Design Name:</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+              className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="font-medium">Description:</label>
+            <textarea
+              value={description}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+              className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="font-medium">Category:</label>
+            <select
+              value={category}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategory(e.target.value as keyof typeof ALLOWED_DESIGN_TYPES)}
+              className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {Object.keys(ALLOWED_DESIGN_TYPES).map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="font-medium">Price:</label>
+            <input
+              type="number"
+              value={price ?? ''}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPrice(e.target.value === '' ? null : Number(e.target.value))}
+              className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="font-medium">Tags:</label>
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTagInput(e.target.value)}
+              onKeyDown={handleAddTag}
+              className="w-full p-4 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div className="flex flex-wrap gap-2">
+              {tags.map(tag => (
+                <span key={tag} className="bg-gray-200 p-2 rounded-lg">{tag} <button type="button" onClick={() => removeTag(tag)}>×</button></span>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="font-medium">Design Files:</label>
+            <div {...getDesignRootProps()} className="flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-6 cursor-pointer transition bg-gray-50 hover:bg-blue-50">
+              <input {...getDesignInputProps()} />
+              <svg width="36" height="36" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="text-blue-400 mb-2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5V19a2 2 0 002 2h14a2 2 0 002-2v-2.5M16 6l-4-4m0 0L8 6m4-4v14" />
+              </svg>
+              <p className="text-gray-700 text-sm font-medium">Drag & drop design files here, or click to select</p>
+              <p className="text-xs text-gray-400 mt-1">Allowed types: {ALLOWED_DESIGN_TYPES[category].extensions.join(', ')}</p>
+            </div>
+            {designFiles.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-4">
+                {designFiles.map((file, idx) => (
+                  <div key={file.name} className="relative w-28 h-28 flex flex-col items-center justify-center group">
+                    <span className="text-xs">{file.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="font-medium">Mockup Files:</label>
+            {dropzone}
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="font-medium">Status:</label>
+            <button
+              type="button"
+              className={`px-4 py-2 rounded-lg border font-semibold transition ${status === 'active' ? 'bg-green-100 text-green-700 border-green-300' : 'bg-gray-100 text-gray-600 border-gray-300'}`}
+              onClick={() => setStatus(status === 'active' ? 'inactive' : 'active')}
+            >
+              {status === 'active' ? 'Active' : 'Inactive'}
+            </button>
+          </div>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              className="bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-semibold shadow hover:bg-gray-400 transition"
+            >
+              Save as Draft
+            </button>
+            <button
+              type="submit"
+              className="bg-gradient-to-r from-blue-500 to-blue-700 text-white px-8 py-3 rounded-lg font-semibold shadow hover:from-blue-600 hover:to-blue-800 transition disabled:opacity-60"
+              disabled={loading}
+            >
+              {loading ? 'Uploading...' : 'Upload Design'}
+            </button>
+          </div>
+            type="button"
+            className="bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-semibold shadow hover:bg-gray-400 transition"
+          >
+            Save as Draft
+          </button>
+          {/* Main Upload Button */}
+          <button
+            type="submit"
+            className="bg-gradient-to-r from-blue-500 to-blue-700 text-white px-8 py-3 rounded-lg font-semibold shadow hover:from-blue-600 hover:to-blue-800 transition disabled:opacity-60"
+            disabled={loading}
+          >
+            {loading ? 'Uploading...' : 'Upload Design'}
+          </button>
         </div>
       </div>
-    </div>
-  );
-}
+    </form>
+  </div>
+);

@@ -13,6 +13,7 @@ function DesignDetail() {
   const { user } = useAuth();
   const [design, setDesign] = useState<Design | null>(null);
   const [files, setFiles] = useState<DesignFile[]>([]);
+  const [mockups, setMockups] = useState<{ id: string; mockup_path: string; url: string }[]>([]);
   const [relatedDesigns, setRelatedDesigns] = useState<Design[]>([]);
   const [hasPurchased, setHasPurchased] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -181,8 +182,6 @@ function DesignDetail() {
         setDesign(data);
         // Increment view count after design is loaded
         incrementView();
-        // Check if the current user has favorited this design
-
         // Fetch related designs from the same store
         const { data: relatedData } = await supabase
           .from('designs')
@@ -190,22 +189,34 @@ function DesignDetail() {
           .eq('store_id', data.store_id)
           .neq('id', id)
           .limit(3);
-
         if (relatedData) {
           setRelatedDesigns(relatedData);
         }
-
+        // Fetch mockup images
+        const { data: mockupsData } = await supabase
+          .from('design_mockups')
+          .select('*')
+          .eq('design_id', id)
+          .order('display_order', { ascending: true });
+        const projectRef = 'rlldapmwdyeeoloivwfi'; // Use your Supabase project ref
+        if (mockupsData) {
+          setMockups(
+            mockupsData.map((mockup: any) => ({
+              id: mockup.id,
+              mockup_path: mockup.mockup_path,
+              url: mockup.mockup_path
+                ? `https://${projectRef}.supabase.co/storage/v1/object/public/${mockup.mockup_path}`
+                : '',
+            }))
+          );
+        }
         // Fetch files
         const { data: fileData } = await supabase
           .from('design_files')
           .select('*')
           .eq('design_id', id)
           .order('display_order', { ascending: true });
-
         if (fileData) {
-          // Generate signed URLs for each file
-          // For public buckets, generate the public URL directly
-          const projectRef = 'rlldapmwdyeeoloivwfi'; // Use your Supabase project ref
           const publicFiles = fileData.map((file: DesignFile) => ({
             ...file,
             url: file.file_path
@@ -218,61 +229,28 @@ function DesignDetail() {
     } catch (error) {
       console.error('Error fetching design:', error);
     }
-  };
-
-  // Handle file download - Only available for free products or purchased products
-  const handleDownload = async () => {
-    console.log('Starting download process...');
-
-    if (!design) {
-      console.error('No design data available');
-      return;
-    }
-    
-    // First check if user is logged in
-    if (!user) {
-      console.log('User not logged in - showing login popup');
-      setIsLoginOpen(true);
-      return;
-    }
-    
-    // Check if the user can download (free design or has purchased)
-    if (design && design.price && design.price > 0 && !hasPurchased) {
       toast.warning('Please purchase this design to download it.');
       console.log('Download blocked - paid item not purchased');
       return;
     }
-    
+    // Download handler for design files
+  const handleDownload = async () => {
     try {
-      // Use the first file from the files array if available
       if (!files || files.length === 0) {
         toast.error('No files available for download');
         return;
       }
-      
-      // Extract a filename from the file path since DesignFile doesn't have a name property
       const pathParts = files[0].file_path.split('/');
       const fileName = pathParts[pathParts.length - 1] || 'design-file';
-      
-      // Verify file_path exists
       if (!files[0].file_path) {
-        console.error('file_path is null or empty in the database record');
         alert('Download is not available — missing file path.');
         return;
       }
-      
-      // Download the file from Supabase storage
-      const { data, error } = await supabase.storage
-        .from('designs')
-        .download(files[0].file_path);
-      
+      const { data, error } = await supabase.storage.from('designs').download(files[0].file_path);
       if (error) {
-        console.error('Download error:', error.message);
         alert('Error downloading the file: ' + error.message);
         return;
       }
-      
-      // Create download link
       const url = URL.createObjectURL(data);
       const link = document.createElement('a');
       link.href = url;
@@ -282,7 +260,6 @@ function DesignDetail() {
       link.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Unexpected error during download:', err);
       alert('An unexpected error occurred during download.');
     }
   };
@@ -309,7 +286,7 @@ function DesignDetail() {
           {/* Main Image */}
           {/* Debug: Log files array to help diagnose image selection issues */}
           {console.log('DesignDetail files array:', files)}
-          {/* Main Mockup Image: Prefer a file with "mockup" in the name and an image extension, else first image file */}
+          {/* Main Mockup Image: Prefer a mockup image if available, else fallback to design file images */}
           {(() => {
             // Acceptable image extensions
             const imageExtensions = [
@@ -319,11 +296,11 @@ function DesignDetail() {
             const isImage = (filename: string = '') => {
               return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
             };
-            // Prefer a file with 'mockup' in the name and an image extension
-            const mockupImage = files.find(f => f.url && isImage(f.url) && f.url.toLowerCase().includes('mockup'));
-            // Else, fall back to first image file
-            const firstImage = files.find(f => f.url && isImage(f.url));
-            const imageFile = mockupImage || firstImage;
+            // Prefer the first mockup image if available
+            const firstMockup = mockups.find(m => m.url && isImage(m.url));
+            // Else, fall back to first image file in design files
+            const firstDesignImage = files.find(f => f.url && isImage(f.url));
+            const imageFile = firstMockup || firstDesignImage;
             return imageFile?.url ? (
               <img src={imageFile.url} alt={design?.name} className="w-full h-72 object-contain rounded-lg border mb-4 bg-gray-100" />
             ) : (
@@ -337,22 +314,37 @@ function DesignDetail() {
 
           {/* Gallery Thumbnails */}
           <div className="flex gap-2 mb-4 overflow-x-auto">
-            {files
-              .filter(file => /\.(png|jpe?g|gif|webp|svg)$/i.test(file.url || ''))
-              .map((file, idx) => (
-                <img
-                  key={file.id || idx}
-                  src={file.url}
-                  alt={`Preview ${idx + 1}`}
-                  className="w-16 h-16 object-cover rounded border cursor-pointer hover:ring-2 hover:ring-blue-400 transition"
-                  onClick={() => {
-                    // Swap main image with clicked thumbnail
+            {/* Gallery Thumbnails: show all mockup images first, then design file images */}
+            {[
+              ...mockups.filter(m => m.url && /\.(png|jpe?g|gif|webp|svg)$/i.test(m.url)),
+              ...files.filter(file => /\.(png|jpe?g|gif|webp|svg)$/i.test(file.url || '')),
+            ].map((img, idx) => (
+              <img
+                key={img.id || idx}
+                src={img.url}
+                alt={`Preview ${idx + 1}`}
+                className="w-16 h-16 object-cover rounded border cursor-pointer hover:ring-2 hover:ring-blue-400 transition"
+                onClick={() => {
+                  // Swap main image with clicked thumbnail (mockups and files)
+                  // If it's a mockup, move it to first in mockups; if design file, move to first in files
+                  if ('mockup_path' in img) {
+                    const reordered = [...mockups];
+                    const index = reordered.findIndex(m => m.id === img.id);
+                    if (index > -1) {
+                      const [clicked] = reordered.splice(index, 1);
+                      setMockups([clicked, ...reordered]);
+                    }
+                  } else {
                     const reordered = [...files];
-                    const [clicked] = reordered.splice(idx, 1);
-                    setFiles([clicked, ...reordered]);
-                  }}
-                />
-              ))}
+                    const index = reordered.findIndex(f => f.id === img.id);
+                    if (index > -1) {
+                      const [clicked] = reordered.splice(index, 1);
+                      setFiles([clicked, ...reordered]);
+                    }
+                  }
+                }}
+              />
+            ))}
           </div>
           {/* Social Share Buttons */}
           <div className="flex gap-2 mb-2">
@@ -385,12 +377,7 @@ function DesignDetail() {
               <span>DOWNLOAD FOR FREE</span>
             </button>
           )}
-          {/* About Section */}
-          <div className="mt-6">
-            <h2 className="text-xl font-bold mb-2">About {design?.name || 'this product'}</h2>
-            <p className="text-gray-700 whitespace-pre-line">{design?.description}</p>
-          </div>
-
+        
           {/* Favorites and Product Details Section */}
           <div className="mt-8 border-t pt-6">
             {/* Favorites */}
@@ -406,16 +393,12 @@ function DesignDetail() {
             </div>
 
             {/* Product Details Emoji List */}
-            <ul className="text-gray-800 space-y-1 text-base mb-4">
-              <li>👉 You’ll receive 45 Designs</li>
-              <li>👉 PNG files – Solid Color / Distressed Effect</li>
-              <li>👉 Resolution 300 dpi (12×12 inches) with transparent background.</li>
-              <li>👉 Easy to resize with different software.</li>
-              <li>👉 Perfect for a multitude of creative projects – frame artwork, cards, scrapbooks, t-shirts, pillows, bags, mugs, stickers, and much more.</li>
-              <li>👉 Colors may slightly vary from what you see on your end, as each monitor is calibrated differently.</li>
-              <li>👉 If you have any questions or need help, please feel free to message me.</li>
-              <li>💖 Project idea is gifted for you so don’t forget to subscribe to me for following up my latest arts.</li>
-            </ul>
+             {/* About Section */}
+          <div className="mt-6">
+            <h2 className="text-xl font-bold mb-2">About {design?.name || 'this product'}</h2>
+            <p className="text-gray-700 whitespace-pre-line">{design?.description}</p>
+          </div>
+
             <div className="text-gray-700 text-base mb-2">
               <span className="font-bold">NOTE:</span> <br />
               This is a digital instant download. No physical item will be sent to you.<br />Thank you!<span className="ml-1">❤</span>
@@ -528,9 +511,7 @@ function DesignDetail() {
       {/* Sticky Footer Bar for Mobile */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg flex items-center justify-between px-4 py-3 md:hidden z-40">
         <div className="flex items-center gap-2">
-          {files[0]?.url && (
-            <img src={files[0].url} alt="Preview" className="w-10 h-10 object-cover rounded" />
-          )}
+          
           <span className="font-semibold text-gray-900 text-sm truncate max-w-[120px]">{design?.name}</span>
         </div>
         {(design && (design.free_download || hasPurchased)) && (
